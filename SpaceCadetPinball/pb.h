@@ -81,8 +81,12 @@ public:
 	static int get_rc_int(Msg uID, int* dst);
 	static std::string make_path_name(const std::string& fileName);
 	static void ShowMessageBox(Uint32 flags, LPCSTR title, LPCSTR message);
+	static bool pb::GetMessageBoxContent(const char **, const char **);
 private:
 	static bool demo_mode;
 	static float IdleTimerMs;
 	static float BallToBallCollision(const ray_type& ray, const TBall& ball, TEdgeSegment** edge, float collisionDistance);
+	static bool new_messagebox;
+	static std::string messagebox_title;
+	static std::string messagebox_message;
 };

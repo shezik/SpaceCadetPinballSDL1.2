@@ -81,6 +81,7 @@ public:
 	[[ noreturn ]] static void memalloc_failure();
 	static int ProcessWindowMessages();
 	static void a_dialog();
+	static void simple_message_box();
 	static void end_pause();
 	static void new_game();
 	static void pause(bool toggle = true);

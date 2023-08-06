@@ -782,6 +782,7 @@ void winmain::RenderUi()
 		ImGui::EndMainMenuBar();
 	}
 
+	simple_message_box();
 	a_dialog();
 	high_score::RenderHighScoreDialog();
 	font_selection::RenderDialog();
@@ -893,9 +894,6 @@ int winmain::event_handler(const SDL_Event* event)
 		pb::InputUp({InputTypes::Keyboard, event->key.keysym.sym});
 		break;
 	case SDL_KEYDOWN:
-		if (event->key.repeat)
-			break;
-
 		pb::InputDown({InputTypes::Keyboard, event->key.keysym.sym});
 		if (!pb::cheat_mode)
 			break;
@@ -985,7 +983,13 @@ int winmain::event_handler(const SDL_Event* event)
 		}
 		break;
 	case SDL_WINDOWEVENT:
-		switch (event->window.event)
+		Uint8 window_event;
+        if (event->active.state & SDL_APPINPUTFOCUS)
+            window_event = event->active.gain ? SDL_WINDOWEVENT_FOCUS_GAINED : SDL_WINDOWEVENT_FOCUS_LOST;
+        if (event->active.state & SDL_APPMOUSEFOCUS)
+            window_event = event->active.gain ? SDL_WINDOWEVENT_ENTER : SDL_WINDOWEVENT_LEAVE;
+
+		switch (window_event)
 		{
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
 		case SDL_WINDOWEVENT_TAKE_FOCUS:
@@ -1007,33 +1011,11 @@ int winmain::event_handler(const SDL_Event* event)
 			has_focus = false;
 			pb::loose_focus();
 			break;
-		case SDL_WINDOWEVENT_SIZE_CHANGED:
-		case SDL_WINDOWEVENT_RESIZED:
-			fullscrn::window_size_changed();
-			break;
 		default: ;
 		}
 		break;
-	case SDL_JOYDEVICEADDED:
-		if (SDL_IsGameController(event->jdevice.which))
-		{
-			SDL_GameControllerOpen(event->jdevice.which);
-		}
-		break;
-	case SDL_JOYDEVICEREMOVED:
-		{
-			SDL_GameController* controller = SDL_GameControllerFromInstanceID(event->jdevice.which);
-			if (controller)
-			{
-				SDL_GameControllerClose(controller);
-			}
-		}
-		break;
-	case SDL_CONTROLLERBUTTONDOWN:
-		pb::InputDown({InputTypes::GameController, event->cbutton.button});
-		break;
-	case SDL_CONTROLLERBUTTONUP:
-		pb::InputUp({InputTypes::GameController, event->cbutton.button});
+	case SDL_VIDEORESIZE:
+		fullscrn::window_size_changed();
 		break;
 	default: ;
 	}
@@ -1249,6 +1231,44 @@ void winmain::a_dialog()
 		ImGui::Separator();
 		if (ImGui::Button("Ok"))
 		{
+			// !! Why not continue (end_pause())?
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+}
+
+void winmain::simple_message_box() {
+	const char *id = "Information";
+	const char *title, *message;
+
+	if (pb::GetMessageBoxContent(&title, &message) && !ImGui::IsPopupOpen(id, ImGuiPopupFlags_None)) {
+		pause(false);
+		ImGui::OpenPopup(id);
+	}
+
+	bool unused_open = true;
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2{ 600, 300 });
+	if (ImGui::BeginPopupModal(id, &unused_open, ImGuiWindowFlags_None))
+	{
+		if (ImGui::BeginTabBar("MsgBoxTabBar", ImGuiTabBarFlags_None))
+		{
+			if (ImGui::BeginTabItem("MsgBox"))
+			{
+				ImGui::TextUnformatted(title);
+				ImGui::Separator();
+
+				ImGui::TextUnformatted(message);
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+		}
+
+		ImGui::Separator();
+		if (ImGui::Button("Ok"))
+		{
+			// Don't unpause. Who knows what happened.
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();

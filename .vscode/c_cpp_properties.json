@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/buildroot-2018.02.9/output/build/**",
+                "/opt/buildroot-2018.02.9/output/host/lib/gcc/mipsel-buildroot-linux-uclibc/6.4.0/**",
+                "/opt/buildroot-2018.02.9/output/host/mipsel-buildroot-linux-uclibc/include/c++/6.4.0/**",
+                "/opt/buildroot-2018.02.9/output/host/mipsel-buildroot-linux-uclibc/sysroot/usr/include/**",
+                "/opt/buildroot-2018.02.9/output/host/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/opt/rs97tools/bin/mipsel-linux-gcc",
+            "cStandard": "c11",
+            "cppStandard": "gnu++11",
+            "intelliSenseMode": "linux-gcc-x86"
+        }
+    ],
+    "version": 4
+}

@@ -17,6 +17,7 @@
 
 #pragma once
 #include "imgui.h"      // IMGUI_IMPL_API
+#include "SDLCompatibilityLayer.h"
 
 struct SDL_Window;
 struct SDL_Renderer;

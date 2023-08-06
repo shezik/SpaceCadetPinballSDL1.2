@@ -35,8 +35,8 @@ GameModes pb::game_mode = GameModes::GameOver;
 float pb::time_now = 0, pb::time_next = 0, pb::time_ticks_remainder = 0;
 float pb::BallMaxSpeed, pb::BallHalfRadius, pb::BallToBallCollisionDistance;
 float pb::IdleTimerMs = 0;
-bool pb::FullTiltMode = false, pb::FullTiltDemoMode = false, pb::cheat_mode = false, pb::demo_mode = false, pb::CreditsActive = false;
-std::string pb::DatFileName, pb::BasePath;
+bool pb::FullTiltMode = false, pb::FullTiltDemoMode = false, pb::cheat_mode = false, pb::demo_mode = false, pb::CreditsActive = false, pb::new_messagebox = false;
+std::string pb::DatFileName, pb::BasePath, pb::messagebox_title, pb::messagebox_message;
 ImU32 pb::TextBoxColor;
 int pb::quickFlag = 0;
 TTextBox *pb::InfoTextBox, *pb::MissTextBox;
@@ -769,8 +769,23 @@ std::string pb::make_path_name(const std::string& fileName)
 
 void pb::ShowMessageBox(Uint32 flags, LPCSTR title, LPCSTR message)
 {
+	new_messagebox = true;
 	fprintf(flags == SDL_MESSAGEBOX_ERROR ? stderr : stdout, "BL error: %s\n%s\n", title, message);
-	SDL_ShowSimpleMessageBox(flags, title, message, winmain::MainWindow);
+	messagebox_title.assign(title);
+	messagebox_message.assign(message);
+}
+
+bool pb::GetMessageBoxContent(const char **title, const char **message) {
+	if (title)
+		*title = messagebox_title.c_str();
+	if (message)
+		*message = messagebox_message.c_str();
+
+	if (new_messagebox) {
+		new_messagebox = false;
+		return true;
+	}
+	return false;
 }
 
 float pb::BallToBallCollision(const ray_type& ray, const TBall& ball, TEdgeSegment** edge, float collisionDistance)

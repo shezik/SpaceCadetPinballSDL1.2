@@ -95,7 +95,7 @@ void render_sprite::set(gdrv_bitmap8* bmp, zmap_header_type* zMap, int xPos, int
 
 void render_sprite::ball_set(gdrv_bitmap8* bmp, float depth, int xPos, int yPos)
 {
-	set(bmp, ZMap,xPos, yPos);
+	set(bmp, ZMap, xPos, yPos);
 	Depth = proj::NormalizeDepth(depth);
 }
 

@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "SDLCompatibilityLayer.h"
 
 struct ImDrawData;
 struct SDL_Renderer;

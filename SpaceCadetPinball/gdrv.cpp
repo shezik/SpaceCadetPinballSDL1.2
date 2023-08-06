@@ -9,6 +9,8 @@
 #include "TTextBox.h"
 #include "fullscrn.h"
 
+#include "SDLCompatibilityLayer.h"
+
 ColorRgba gdrv::current_palette[256]{};
 
 gdrv_bitmap8::gdrv_bitmap8(int width, int height) : gdrv_bitmap8(width, height, true, true)
