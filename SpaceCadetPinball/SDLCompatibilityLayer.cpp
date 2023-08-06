@@ -266,6 +266,7 @@ SDL_PixelFormat *SDL_ReallocFormat(SDL_Surface *surface, int bpp,
 
 #define SDLCOMPAT_INVALID_FLAG 0x7FFFFFFF
 // Create empty surface with identical format, pass SDLCOMPAT_INVALID_FLAG as flags to use flags from source, pass nullptr as rect to use size from source
+// !! Does this keep SDL_SRCALPHA?
 static SDL_Surface *SDLCompat_CreateSurfaceDuplicateFormat(Uint32 flags, SDL_Rect *size, SDL_Surface *source) {
     flags = (flags == SDLCOMPAT_INVALID_FLAG) ? source->flags : flags;
     int w = size ? size->w : source->w;
@@ -769,7 +770,57 @@ int SDL_RenderDrawPoints(SDL_Renderer *renderer, const SDL_Point *points, int co
 }
 
 int SDL_RenderCopy(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_Rect *dstrect) {
+    return SDL_RenderCopyEx(renderer, texture, srcrect, dstrect, 0, nullptr, SDL_FLIP_NONE);
+}
 
+int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_Rect *dstrect, const double angle, const SDL_Point *, const SDL_RendererFlip flip) {  // !! Cannot specify rotation center yet
+    int rtn = 0;
+    rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
+
+    SDL_Surface *src, *mid;
+    double zoomx, zoomy;
+    SDL_Rect srcrectFull = {0, 0, texture->w, texture->h};
+    SDL_Rect dstrectFull = {0, 0, renderer->ClipSource->w, renderer->ClipSource->h};
+
+    if (!srcrect)
+        srcrect = &srcrectFull;
+    if (!dstrect)
+        dstrect = &dstrectFull;
+
+    if (!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
+        // Much simpler.
+        rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
+        goto end;
+    }
+
+    if (!rtn) {
+        src = SDLCompat_CreateSurfaceDuplicateFormat(SDLCOMPAT_INVALID_FLAG, (SDL_Rect *) srcrect, texture);
+        rtn = -!src;
+    }
+    rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, src, nullptr) : rtn;
+
+    assertm(srcrect->w && srcrect->h, "Divide by zero caused by srcrect");
+    zoomx = dstrect->w / srcrect->w; zoomy = dstrect->h / srcrect->h;
+    if (flip & SDL_FLIP_HORIZONTAL)
+        zoomx = -zoomx;
+    if (flip & SDL_FLIP_VERTICAL)
+        zoomy = -zoomy;
+    
+    if (!rtn) {
+        if (angle) {
+            mid = rotozoomSurfaceXY(src, angle, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
+        } else {
+            mid = zoomSurface(src, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
+        }
+        rtn = -!mid;
+    }
+    SDL_FreeSurface(src); src = nullptr;
+    rtn = !rtn ? SDL_BlitSurface(mid, nullptr, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
+    SDL_FreeSurface(mid); mid = nullptr;
+
+    end:
+    rtn = !rtn ? SDLCompat_BlitClipSource(renderer) : rtn;
+    return rtn;
 }
 
 int SDL_QueryTexture(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h) {

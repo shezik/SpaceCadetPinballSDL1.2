@@ -267,6 +267,7 @@ int SDL_SetRenderTarget(SDL_Renderer *, SDL_Texture *);
 int SDL_RenderDrawPoint(SDL_Renderer *, int, int);
 int SDL_RenderDrawPoints(SDL_Renderer *, const SDL_Point *, int);
 int SDL_RenderCopy(SDL_Renderer *, SDL_Texture *, const SDL_Rect *, const SDL_Rect *);
+int SDL_RenderCopyEx(SDL_Renderer *, SDL_Texture *, const SDL_Rect *, const SDL_Rect *, const double, const SDL_Point *, const SDL_RendererFlip);
 
 SDL_Texture *SDL_CreateTexture(SDL_Renderer *, Uint32, int, int, int);
 SDL_Texture *SDL_CreateTextureFromSurface(SDL_Renderer *, SDL_Surface *);

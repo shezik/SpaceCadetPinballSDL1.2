@@ -10,5 +10,7 @@ Stretch source surface first to optimize one step?
 1. Use SDL_gfx to stretch source surface to match dstrect's dimensions, involving srcrect and math and stuff. This creates a new surface.
 2. Calculate what the new srcrect should be, then use it to blit to destination surface.
 
-Is streching a big surface first faster or is creating multiple surfaces faster?  
-Implement both then profile. (I kinda think the latter one's faster...?)
+Is creating multiple surfaces first faster or is streching a big surface faster?  
+Implement both then profile. (I kinda think the first one's faster...?)
+
+If the surface needs to be rotated then the second method won't work.
