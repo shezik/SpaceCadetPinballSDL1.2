@@ -290,10 +290,6 @@ static SDL_Surface *SDLCompat_CreateSurfaceDuplicateFormat(Uint32 flags, SDL_Rec
     return newSurface;
 }
 
-char *SDL_GetClipboardText() { return nullptr; };
-int SDL_SetClipboardText(const char *) { return 0; };
-void SDL_SetMainReady() {};
-
 SDL_Cursor *SDL_CreateSystemCursor(SDL_SystemCursor) {
     return SDL_CreateCursor(default_cdata, default_cmask,
 					        DEFAULT_CWIDTH, DEFAULT_CHEIGHT,
@@ -403,6 +399,23 @@ int SDL_GetRendererOutputSize(SDL_Renderer *renderer, int *w, int *h) {
     if (h)
         *h = renderer->RenderTarget->h;
     return 0;
+}
+
+// Call before any drawing
+static int SDLCompat_UpdateClipSource(SDL_Renderer *renderer) {
+    if (!renderer->ClipEnabled)
+        return 0;
+
+    return SDL_BlitSurface(renderer->RenderTarget, nullptr, renderer->ClipSource, nullptr);
+}
+
+// Call after any drawing
+static int SDLCompat_BlitClipSource(SDL_Renderer *renderer) {
+    if (!renderer->ClipEnabled)
+        return 0;
+
+    SDL_Rect dstrect = renderer->ClipRect;  // Temporary copy to be modified by SDL_BlitSurface
+    return SDL_BlitSurface(renderer->ClipSource, &renderer->ClipRect, renderer->RenderTarget, &dstrect);
 }
 
 int SDL_RenderClear(SDL_Renderer *renderer) {
@@ -720,23 +733,6 @@ int SDL_RenderSetClipRect(SDL_Renderer *renderer, const SDL_Rect *rect) {
     // renderer->ClipSource = SDL_ConvertSurface(renderer->RenderTarget, renderer->RenderTarget->format, SDL_SWSURFACE);  // Duplicate surface
     renderer->ClipSource = SDLCompat_CreateSurfaceDuplicateFormat(SDL_SWSURFACE | SDL_SRCALPHA | SDL_RLEACCEL, nullptr, renderer->RenderTarget);  // Faster because no blitting required (blank surface)
     return renderer->ClipSource ? 0 : -1;
-}
-
-// Call before any drawing
-static int SDLCompat_UpdateClipSource(SDL_Renderer *renderer) {
-    if (!renderer->ClipEnabled)
-        return 0;
-
-    return SDL_BlitSurface(renderer->RenderTarget, nullptr, renderer->ClipSource, nullptr);
-}
-
-// Call after any drawing
-static int SDLCompat_BlitClipSource(SDL_Renderer *renderer) {
-    if (!renderer->ClipEnabled)
-        return 0;
-
-    SDL_Rect dstrect = renderer->ClipRect;  // Temporary copy to be modified by SDL_BlitSurface
-    return SDL_BlitSurface(renderer->ClipSource, &renderer->ClipRect, renderer->RenderTarget, &dstrect);
 }
 
 SDL_Texture *SDL_GetRenderTarget(SDL_Renderer *renderer) {

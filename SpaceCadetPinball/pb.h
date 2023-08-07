@@ -81,7 +81,7 @@ public:
 	static int get_rc_int(Msg uID, int* dst);
 	static std::string make_path_name(const std::string& fileName);
 	static void ShowMessageBox(Uint32 flags, LPCSTR title, LPCSTR message);
-	static bool pb::GetMessageBoxContent(const char **, const char **);
+	static bool GetMessageBoxContent(const char **, const char **);
 private:
 	static bool demo_mode;
 	static float IdleTimerMs;

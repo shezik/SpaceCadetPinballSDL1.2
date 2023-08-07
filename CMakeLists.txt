@@ -33,8 +33,9 @@ set(SDL2_BUILDING_LIBRARY ON)
 
 find_package(SDL2 REQUIRED)
 FIND_PACKAGE(SDL2_mixer REQUIRED)
+FIND_PACKAGE(SDL_gfx REQUIRED)
 
-include_directories(${SDL2_INCLUDE_DIR} ${SDL2_MIXER_INCLUDE_DIR})
+include_directories(${SDL2_INCLUDE_DIR} ${SDL2_MIXER_INCLUDE_DIR} ${SDL_GFX_INCLUDE_DIR})
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 foreach(dir ${dirs})
   message(STATUS "Include dir='${dir}'")
@@ -78,6 +79,8 @@ set(SOURCE_FILES
         SpaceCadetPinball/render.h
         SpaceCadetPinball/score.cpp
         SpaceCadetPinball/score.h
+        SpaceCadetPinball/SDLCompatibilityLayer.cpp
+        SpaceCadetPinball/SDLCompatibilityLayer.h
         SpaceCadetPinball/Sound.cpp
         SpaceCadetPinball/Sound.h
         SpaceCadetPinball/SpaceCadetPinball.cpp
@@ -178,8 +181,8 @@ set(SOURCE_FILES
         SpaceCadetPinball/imgui_demo.cpp
         SpaceCadetPinball/imgui_impl_sdl.cpp
         SpaceCadetPinball/imgui_impl_sdl.h
-        SpaceCadetPinball/imgui_impl_sdlrenderer.h
-        SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
+        # SpaceCadetPinball/imgui_impl_sdlrenderer.h
+        # SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
         SpaceCadetPinball/imstb_textedit.h
         SpaceCadetPinball/imstb_rectpack.h
         SpaceCadetPinball/imstb_truetype.h
@@ -204,7 +207,8 @@ set_source_files_properties(
         SpaceCadetPinball/imgui_tables.cpp
         SpaceCadetPinball/imgui_demo.cpp
         SpaceCadetPinball/imgui_impl_sdl.cpp
-        SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
+        # SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
+        SpaceCadetPinball/SDLCompatibilityLayer.cpp
         PROPERTIES SKIP_PRECOMPILE_HEADERS 1
 )
 
@@ -215,7 +219,7 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.16.0" OR ${CMAKE_VERSION} VERSION_EQUAL "
             )
 endif()
 
-target_link_libraries(SpaceCadetPinball ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY})
+target_link_libraries(SpaceCadetPinball ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY} ${SDL_GFX_LIBRARY})
 
 # On Windows, copy DLL to output
 if(WIN32)

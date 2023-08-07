@@ -136,9 +136,9 @@ typedef enum
     > ...
 */
 
-inline char *SDL_GetClipboardText();
-inline int SDL_SetClipboardText(const char *);
-inline void SDL_SetMainReady();
+inline char *SDL_GetClipboardText() {};
+inline int SDL_SetClipboardText(const char *) { return 0; };
+inline void SDL_SetMainReady() {};
 
 typedef enum
 {
@@ -168,12 +168,6 @@ typedef enum
     SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT = 0x00000080,   /**< buttons placed left to right */
     SDL_MESSAGEBOX_BUTTONS_RIGHT_TO_LEFT = 0x00000100    /**< buttons placed right to left */
 } SDL_MessageBoxFlags;
-
-typedef struct SDL_Window {
-    SDL_Renderer *Renderer;
-    SDL_Rect tempSize;  // DO NOT USE, only used to temporarily store size before Renderer creation.
-    Uint32 tempFlags;   // Same as above. They do not represent the actual supported video mode.
-} SDL_Window;
 
 typedef SDL_Surface SDL_Texture;
 
@@ -234,6 +228,12 @@ typedef struct SDL_Renderer {
     SDL_Surface *ClipSource;  // This is what we actaully draw on with clipping enabled, then the desired clipping area is transferred to RenderTarget.
     SDL_BlendMode BlendMode;
 } SDL_Renderer;
+
+typedef struct SDL_Window {
+    SDL_Renderer *Renderer;
+    SDL_Rect tempSize;  // DO NOT USE, only used to temporarily store size before Renderer creation.
+    Uint32 tempFlags;   // Same as above. They do not represent the actual supported video mode.
+} SDL_Window;
 
 typedef enum
 {
