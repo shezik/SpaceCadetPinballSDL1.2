@@ -4,6 +4,8 @@
 
 #include "pb.h"
 
+#include "SDLCompatibilityLayer.h"
+
 
 std::vector<Mix_Music*> midi::LoadedTracks{};
 Mix_Music* midi::track1, * midi::track2, * midi::track3;

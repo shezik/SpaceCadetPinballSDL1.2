@@ -1,6 +1,8 @@
 #pragma once
 #include "SDL.h"
 
+#define Mix_LoadMUS_RW(rw, freesrc) Mix_LoadMUSType_RW(rw, MUS_NONE, freesrc)
+
 #define SDL_TICKS_PASSED(A, B)  ((Sint32)((B) - (A)) <= 0)
 
 typedef int (SDLCALL * SDLCompat_SDL2EventFilter) (void *userdata, SDL_Event * event);
@@ -18,6 +20,7 @@ typedef int (SDLCALL * SDLCompat_SDL2EventFilter) (void *userdata, SDL_Event * e
 #define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
 #define SDL_WINDOW_HIDDEN 0
 #define SDL_WINDOW_RESIZABLE SDL_RESIZABLE
+#define SDL_WINDOW_FULLSCREEN_DESKTOP 0
 
 #define SDLK_SCROLLLOCK SDLK_SCROLLOCK
 #define SDLK_NUMLOCKCLEAR SDLK_NUMLOCK
@@ -57,6 +60,33 @@ typedef int (SDLCALL * SDLCompat_SDL2EventFilter) (void *userdata, SDL_Event * e
     >       }
     > ...
 */
+
+typedef enum
+{
+    SDL_CONTROLLER_BUTTON_INVALID = -1,
+    SDL_CONTROLLER_BUTTON_A,
+    SDL_CONTROLLER_BUTTON_B,
+    SDL_CONTROLLER_BUTTON_X,
+    SDL_CONTROLLER_BUTTON_Y,
+    SDL_CONTROLLER_BUTTON_BACK,
+    SDL_CONTROLLER_BUTTON_GUIDE,
+    SDL_CONTROLLER_BUTTON_START,
+    SDL_CONTROLLER_BUTTON_LEFTSTICK,
+    SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+    SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+    SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+    SDL_CONTROLLER_BUTTON_DPAD_UP,
+    SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+    SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+    SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+    SDL_CONTROLLER_BUTTON_MISC1,    /* Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button */
+    SDL_CONTROLLER_BUTTON_PADDLE1,  /* Xbox Elite paddle P1 (upper left, facing the back) */
+    SDL_CONTROLLER_BUTTON_PADDLE2,  /* Xbox Elite paddle P3 (upper right, facing the back) */
+    SDL_CONTROLLER_BUTTON_PADDLE3,  /* Xbox Elite paddle P2 (lower left, facing the back) */
+    SDL_CONTROLLER_BUTTON_PADDLE4,  /* Xbox Elite paddle P4 (lower right, facing the back) */
+    SDL_CONTROLLER_BUTTON_TOUCHPAD, /* PS4/PS5 touchpad button */
+    SDL_CONTROLLER_BUTTON_MAX
+} SDL_GameControllerButton;
 
 #define SDL_WINDOWEVENT SDL_ACTIVEEVENT
 #define SDL_RENDER_TARGETS_RESET SDL_EVENT_RESERVED2  // This should never be triggered since "Events SDL_USEREVENT through SDL_MAXEVENTS-1 are for your use".
@@ -239,6 +269,7 @@ void SDL_DelEventWatch(SDLCompat_SDL2EventFilter, void *);
 SDL_Window *SDL_CreateWindow(const char *, int, int, int, int, Uint32);
 void SDL_SetWindowTitle(SDL_Window *, const char *);
 void SDL_ShowWindow(SDL_Window *);
+int SDL_SetWindowFullscreen(SDL_Window *, Uint32);
 void SDL_GetWindowSize(SDL_Window *, int *, int *);
 void SDL_SetWindowSize(SDL_Window *, int, int);
 void SDL_WarpMouseInWindow(SDL_Window *, int, int);
@@ -250,6 +281,7 @@ void SDL_DestroyWindow(SDL_Window *);
 
 SDL_Renderer *SDL_CreateRenderer(SDL_Window *, int, Uint32);
 int SDL_GetRendererInfo(SDL_Renderer *, SDL_RendererInfo *);
+int SDL_GetRendererOutputSize(SDL_Renderer *, int *, int *);
 int SDL_RenderClear(SDL_Renderer *);
 int SDL_RenderDrawLine(SDL_Renderer *, int, int, int, int);
 int SDL_RenderDrawRect(SDL_Renderer *, const SDL_Rect *);
@@ -278,3 +310,9 @@ int SDL_LockTexture(SDL_Texture *, const SDL_Rect *, void **, int *);
 void SDL_UnlockTexture(SDL_Texture *);
 int SDL_UpdateTexture(SDL_Texture *, const SDL_Rect *, const void *, int);
 int SDL_SetTextureColorMod(SDL_Texture *, Uint8, Uint8, Uint8);
+
+char *SDL_GetPrefPath(const char *, const char *);
+char *SDL_GetBasePath(void);
+
+Uint64 SDL_GetPerformanceFrequency(void);
+Uint64 SDL_GetPerformanceCounter(void);

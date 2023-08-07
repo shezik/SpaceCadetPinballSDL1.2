@@ -568,7 +568,7 @@ std::string GameInput::GetShortInputDescription() const
 	switch (Type)
 	{
 	case InputTypes::Keyboard:
-		keyName = SDL_GetKeyName(Value);
+		keyName = SDL_GetKeyName((SDLKey) Value);
 		break;
 	case InputTypes::Mouse:
 		if (Value >= SDL_BUTTON_LEFT && Value <= SDL_BUTTON_X2)

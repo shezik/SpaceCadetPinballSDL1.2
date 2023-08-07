@@ -56,6 +56,23 @@
         "new": "cpp",
         "typeinfo": "cpp",
         "hash_map": "cpp",
-        "hash_set": "cpp"
+        "hash_set": "cpp",
+        "strstream": "cpp",
+        "bitset": "cpp",
+        "codecvt": "cpp",
+        "condition_variable": "cpp",
+        "filesystem": "cpp",
+        "ratio": "cpp",
+        "string_view": "cpp",
+        "rope": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp",
+        "cfenv": "cpp",
+        "valarray": "cpp",
+        "*.x": "cpp",
+        "*.def": "cpp",
+        "*.inc": "cpp"
     }
 }

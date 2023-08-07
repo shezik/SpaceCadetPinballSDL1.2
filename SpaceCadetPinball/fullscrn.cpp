@@ -136,8 +136,8 @@ void fullscrn::window_size_changed()
 
 	render::DestinationRect = SDL_Rect
 	{
-		OffsetX, OffsetY + menuHeight,
-		width - offset2X, height - offset2Y
+		(Sint16) OffsetX, (Sint16) (OffsetY + menuHeight),
+		(Uint16) (width - offset2X), (Uint16) (height - offset2Y)
 	};
 }
 

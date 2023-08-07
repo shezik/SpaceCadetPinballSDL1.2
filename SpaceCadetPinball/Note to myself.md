@@ -14,3 +14,8 @@ Is creating multiple surfaces first faster or is streching a big surface faster?
 Implement both then profile. (I kinda think the first one's faster...?)
 
 If the surface needs to be rotated then the second method won't work.
+
+What is going on at line 496 in render.cpp?
+
+Explicit conversion of types inside SDL_Rect at line 139 in fullscrn.cpp.  
+Explicit conversion of int to SDLKey at line 571 in options.cpp.
