@@ -294,12 +294,14 @@ void pb::frame(float dtMilliSec)
 		IdleTimerMs += dtMilliSec;
 		if (IdleTimerMs >= 60000 && !CreditsActive)
 		{
+			printf("45\n");
 			PushCheat("credits");
 		}
 	}
 
 	float dtSec = dtMilliSec * 0.001f;
 	time_next = time_now + dtSec;
+	printf("46\n");
 	timed_frame(dtSec);
 	time_now = time_next;
 
@@ -319,17 +321,23 @@ void pb::frame(float dtMilliSec)
 			nudgeDec = 0.0;
 		nudge::nudge_count = nudgeDec;
 	}
+	printf("47\n");
 	timer::check();
+	printf("48\n");
 	render::update();
+	printf("49\n");
 	score::update(MainTable->CurScoreStruct);
 	if (!MainTable->TiltLockFlag)
 	{
 		if (nudge::nudge_count > 0.5f)
 		{
+			printf("50\n");
 			InfoTextBox->Display(get_rc_string(Msg::STRING126), 2.0);
 		}
-		if (nudge::nudge_count > 1.0f)
+		if (nudge::nudge_count > 1.0f) {
+			printf("51\n");
 			MainTable->tilt(time_now);
+		}
 	}
 }
 
@@ -770,7 +778,8 @@ std::string pb::make_path_name(const std::string& fileName)
 void pb::ShowMessageBox(Uint32 flags, LPCSTR title, LPCSTR message)
 {
 	new_messagebox = true;
-	fprintf(flags == SDL_MESSAGEBOX_ERROR ? stderr : stdout, "BL error: %s\n%s\n", title, message);
+	// fprintf(flags == SDL_MESSAGEBOX_ERROR ? stderr : stdout, "BL error: %s\n%s\n", title, message);
+	printf("BL error: %s\n%s\n", title, message);
 	messagebox_title.assign(title);
 	messagebox_message.assign(message);
 }

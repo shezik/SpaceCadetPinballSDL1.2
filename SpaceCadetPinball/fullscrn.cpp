@@ -134,6 +134,8 @@ void fullscrn::window_size_changed()
 	OffsetX = offset2X / 2;
 	OffsetY = offset2Y / 2;
 
+	printf("width: %d, height: %d, ScaleX: %f, ScaleY: %f, offset2X: %d, offset2Y: %d, OffsetX: %d, OffsetY: %d\n", width, height, ScaleX, ScaleY, offset2X, offset2Y, OffsetX, OffsetY);
+
 	render::DestinationRect = SDL_Rect
 	{
 		(Sint16) OffsetX, (Sint16) (OffsetY + menuHeight),

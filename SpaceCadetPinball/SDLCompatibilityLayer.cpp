@@ -19,6 +19,12 @@
 // Code dependencies copied from SDL 1.2.15, please collapse this!
 #pragma region original_stuff
 
+#if 1
+    #define DEFAULT_ALPHA_MODE (SDL_SRCALPHA | SDL_RLEACCEL)
+#else
+    #define DEFAULT_ALPHA_MODE 0
+#endif
+
 typedef struct SDL_BlitMap {
 	SDL_Surface *dst;
 	int identity;
@@ -273,12 +279,12 @@ SDL_PixelFormat *SDL_ReallocFormat(SDL_Surface *surface, int bpp,
 
 #define SDLCOMPAT_INVALID_FLAG 0x7FFFFFFF
 // Create empty surface with identical format, pass SDLCOMPAT_INVALID_FLAG as flags to use flags from source, pass nullptr as rect to use size from source
-// !! Does this keep SDL_SRCALPHA?
+// OR both SDL_CreateRGBSurface and SDL_SetAlpha flags together. It'll take care of it for you.
 static SDL_Surface *SDLCompat_CreateSurfaceDuplicateFormat(Uint32 flags, SDL_Rect *size, SDL_Surface *source) {
     flags = (flags == SDLCOMPAT_INVALID_FLAG) ? source->flags : flags;
     int w = size ? size->w : source->w;
     int h = size ? size->h : source->h;
-    SDL_Surface *newSurface = SDL_CreateRGBSurface(flags, \
+    SDL_Surface *newSurface = SDL_CreateRGBSurface(flags & (SDL_SWSURFACE | SDL_HWSURFACE | SDL_ASYNCBLIT), \
                                                    w, \
                                                    h, \
                                                    source->format->BitsPerPixel, \
@@ -287,6 +293,7 @@ static SDL_Surface *SDLCompat_CreateSurfaceDuplicateFormat(Uint32 flags, SDL_Rec
                                                    source->format->Bmask, \
                                                    source->format->Amask);
     newSurface->unused1 = source->unused1;
+    SDL_SetAlpha(newSurface, (flags & SDL_SRCALPHA) ? (SDL_SRCALPHA | SDL_RLEACCEL) : 0, SDL_ALPHA_OPAQUE);
     return newSurface;
 }
 
@@ -332,10 +339,12 @@ static int SDLCompat_GetRotozoomSmoothFlag() {
 static int windowCount = 0;
 
 SDL_Window *SDL_CreateWindow(const char *title, int, int, int w, int h, Uint32 flags) {
+    // !! title??
     assertm(!windowCount, "Creating more than one window");
     windowCount++;
     SDL_Window *newWindow = new SDL_Window{0};
-    SDL_Rect size = {0, 0, w, h};
+    // !! SDL_Rect size = {0, 0, w, h};
+    SDL_Rect size = {0, 0, 480, 272};
     newWindow->tempSize = size;
     newWindow->tempFlags = flags;
     return newWindow;
@@ -349,6 +358,7 @@ void SDL_ShowWindow(SDL_Window *) {};
 
 // Update video mode and InitialRenderTarget
 void SDL_SetWindowSize(SDL_Window *window, int w, int h) {
+    return;  // !!
     SDL_Renderer *renderer = window->Renderer;
 
     // If currently on InitialRenderTarget and clipping is enabled, update ClipSource
@@ -382,7 +392,12 @@ void SDL_DestroyWindow(SDL_Window *window) {
 SDL_Renderer *SDL_CreateRenderer(SDL_Window *window, int, Uint32) {
     SDL_Renderer *newRenderer = new SDL_Renderer{0};
     assertm(!window->Renderer, "Renderer already exists for this window");
-    newRenderer->RenderTarget = newRenderer->InitialRenderTarget = SDL_SetVideoMode(window->tempSize.w, window->tempSize.h, 16, window->tempFlags);  // !! Hardcoded bpp?
+    printf("newRenderer pointer: %p\n", newRenderer);
+    printf("Window pointer: %p\n", window);
+    printf("Window width: %d\n", window->tempSize.w);
+    printf("Window height: %d\n", window->tempSize.h);
+    printf("Window flags: %x\n", window->tempFlags);
+    newRenderer->ClipSource = newRenderer->RenderTarget = newRenderer->InitialRenderTarget = SDL_SetVideoMode(window->tempSize.w, window->tempSize.h, 16, window->tempFlags);  // !! Hardcoded bpp?
     window->Renderer = newRenderer;
     return newRenderer;
 }
@@ -394,33 +409,42 @@ int SDL_GetRendererInfo(SDL_Renderer *, SDL_RendererInfo *info) {
 }
 
 int SDL_GetRendererOutputSize(SDL_Renderer *renderer, int *w, int *h) {
+    printf("Renderer output size: %d x %d\n", renderer->InitialRenderTarget->w, renderer->InitialRenderTarget->h);
     if (w)
-        *w = renderer->RenderTarget->w;  // !! Is this correct?
+        *w = renderer->InitialRenderTarget->w;
     if (h)
-        *h = renderer->RenderTarget->h;
+        *h = renderer->InitialRenderTarget->h;
     return 0;
 }
 
 // Call before any drawing
 static int SDLCompat_UpdateClipSource(SDL_Renderer *renderer) {
-    if (!renderer->ClipEnabled)
+    if (!renderer->ClipEnabled) {
+        assertm(renderer->ClipSource == renderer->RenderTarget, "ClipSource not reset after disabling clipping");
         return 0;
+    }
 
     return SDL_BlitSurface(renderer->RenderTarget, nullptr, renderer->ClipSource, nullptr);
 }
 
 // Call after any drawing
 static int SDLCompat_BlitClipSource(SDL_Renderer *renderer) {
-    if (!renderer->ClipEnabled)
+    if (!renderer->ClipEnabled) {
+        assertm(renderer->ClipSource == renderer->RenderTarget, "ClipSource not reset after disabling clipping");
         return 0;
+    }
 
     SDL_Rect dstrect = renderer->ClipRect;  // Temporary copy to be modified by SDL_BlitSurface
-    return SDL_BlitSurface(renderer->ClipSource, &renderer->ClipRect, renderer->RenderTarget, &dstrect);
+    return SDL_BlitSurface(renderer->ClipSource, &renderer->ClipRect, renderer->RenderTarget, &dstrect);  // !! Disable alpha blending?
 }
 
 int SDL_RenderClear(SDL_Renderer *renderer) {
     int rtn = 0;
+    printf("RenderTarget: %p\n", renderer->RenderTarget);
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
+    printf("ClipSource: %p\n", renderer->ClipSource);
+    printf("ClipSource->format: %p\n", renderer->ClipSource->format);
+    printf("ClipSource->format->BitsPerPixel: %d\n", renderer->ClipSource->format->BitsPerPixel);
 
     rtn = !rtn ? SDL_FillRect(renderer->ClipSource, \
                               nullptr, \
@@ -467,7 +491,11 @@ int SDL_RenderDrawRect(SDL_Renderer *renderer, const SDL_Rect *rect) {
     int rtn = 0;
     SDL_BlendMode blendMode;
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
+    SDL_Rect rectFull = {0, 0, renderer->ClipSource->w, renderer->ClipSource->h};
     
+    if (!rect)
+        rect = &rectFull;
+
     rtn = !rtn ? SDL_GetRenderDrawBlendMode(renderer, &blendMode) : rtn;
     rtn = !rtn ? rectangleRGBA(renderer->ClipSource, \
                                rect->x, \
@@ -487,7 +515,11 @@ int SDL_RenderFillRect(SDL_Renderer *renderer, const SDL_Rect *rect) {
     int rtn = 0;
     SDL_BlendMode blendMode;
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
+    SDL_Rect rectFull = {0, 0, renderer->ClipSource->w, renderer->ClipSource->h};
     
+    if (!rect)
+        rect = &rectFull;
+
     rtn = !rtn ? SDL_GetRenderDrawBlendMode(renderer, &blendMode) : rtn;
     rtn = !rtn ? boxRGBA(renderer->ClipSource, \
                          rect->x, \
@@ -640,27 +672,29 @@ SDL_Texture *SDL_CreateTexture(SDL_Renderer *renderer, Uint32 format, int access
 
     int rtn = SDLCompat_ParsePixelFormat((SDLCompat_PixelFormatEnum) format, &bpp, &Rmask, &Gmask, &Bmask, &Amask);
     if (!rtn) {
-        newTexture = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL, w, h, bpp, Rmask, Gmask, Bmask, Amask);
+        newTexture = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, bpp, Rmask, Gmask, Bmask, Amask);
         newTexture->unused1 = format;
+        SDL_SetAlpha(newTexture, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE);
     }
 
     return newTexture;
 }
 
 SDL_Texture *SDL_CreateTextureFromSurface(SDL_Renderer *, SDL_Surface *surface) {
-    SDL_Texture *newTexture = SDL_ConvertSurface(surface, surface->format, SDL_SWSURFACE | SDL_SRCALPHA | SDL_RLEACCEL);  // Duplicate surface  // !! SRCALPHA?
+    SDL_Texture *newTexture = SDL_ConvertSurface(surface, surface->format, SDL_SWSURFACE);  // Duplicate surface  // !! SRCALPHA?
+    SDL_SetAlpha(newTexture, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE);  // !! Follow surface?
     newTexture->unused1 = surface->unused1;
     return newTexture;
 }
 
 int SDL_GetTextureBlendMode(SDL_Texture *texture, SDL_BlendMode *blendMode) {
-    *blendMode = (texture->flags & SDL_BLENDMODE_BLEND) ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE;
+    *blendMode = (texture->flags & SDL_SRCALPHA) ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE;
     return 0;
 }
 
 int SDL_SetTextureBlendMode(SDL_Texture *texture, SDL_BlendMode blendMode) {
     int rtn = 0;
-    rtn = !rtn ? SDL_SetAlpha(texture, SDL_RLEACCEL | ((blendMode & SDL_BLENDMODE_BLEND) ? SDL_SRCALPHA : 0), SDL_ALPHA_OPAQUE) : rtn;
+    rtn = !rtn ? SDL_SetAlpha(texture, (blendMode & SDL_BLENDMODE_BLEND) ? (SDL_SRCALPHA | SDL_RLEACCEL) : 0, SDL_ALPHA_OPAQUE) : rtn;
     if (blendMode & ~SDL_BLENDMODE_BLEND)
         rtn = !rtn ? -1 : rtn;  // Only alpha blending is supported.
     return rtn;
@@ -716,12 +750,12 @@ void SDL_RenderGetClipRect(SDL_Renderer *renderer, SDL_Rect *rect) {
 
 int SDL_RenderSetClipRect(SDL_Renderer *renderer, const SDL_Rect *rect) {
     if (!rect) {
-        if (renderer->ClipEnabled) {
-            // Disable and clean up
-            renderer->ClipEnabled = SDL_FALSE;
+        // Disable and clean up
+        if (renderer->ClipEnabled)
             SDL_FreeSurface(renderer->ClipSource);
-            renderer->ClipSource = renderer->RenderTarget;  // So that anything drawn onto ClipSource is passed down to RenderTarget, effectively bypassing the clip feature.
-        }
+
+        renderer->ClipEnabled = SDL_FALSE;
+        renderer->ClipSource = renderer->RenderTarget;  // So that anything drawn onto ClipSource is passed down to RenderTarget, effectively bypassing the clip feature.
         return 0;
     }
 
@@ -731,7 +765,7 @@ int SDL_RenderSetClipRect(SDL_Renderer *renderer, const SDL_Rect *rect) {
     renderer->ClipEnabled = SDL_TRUE;
     renderer->ClipRect = *rect;
     // renderer->ClipSource = SDL_ConvertSurface(renderer->RenderTarget, renderer->RenderTarget->format, SDL_SWSURFACE);  // Duplicate surface
-    renderer->ClipSource = SDLCompat_CreateSurfaceDuplicateFormat(SDL_SWSURFACE | SDL_SRCALPHA | SDL_RLEACCEL, nullptr, renderer->RenderTarget);  // Faster because no blitting required (blank surface)
+    renderer->ClipSource = SDLCompat_CreateSurfaceDuplicateFormat(SDL_SWSURFACE, nullptr, renderer->RenderTarget);  // Faster because no blitting required (blank surface)
     return renderer->ClipSource ? 0 : -1;
 }
 
@@ -788,34 +822,41 @@ int SDL_RenderCopy(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect 
     return SDL_RenderCopyEx(renderer, texture, srcrect, dstrect, 0, nullptr, SDL_FLIP_NONE);
 }
 
-int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_Rect *dstrect, const double angle, const SDL_Point *, const SDL_RendererFlip flip) {  // !! Cannot specify rotation center yet
+int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *_srcrect, const SDL_Rect *_dstrect, const double angle, const SDL_Point *, const SDL_RendererFlip flip) {  // !! Cannot specify rotation center yet
     int rtn = 0;
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
 
     SDL_Surface *src, *mid;
     double zoomx, zoomy;
+    SDL_Rect srcrectLocal, dstrectLocal, *srcrect, *dstrect;
     SDL_Rect srcrectFull = {0, 0, texture->w, texture->h};
     SDL_Rect dstrectFull = {0, 0, renderer->ClipSource->w, renderer->ClipSource->h};
 
-    if (!srcrect)
-        srcrect = &srcrectFull;
-    if (!dstrect)
-        dstrect = &dstrectFull;
+    srcrectLocal = _srcrect ? *_srcrect : srcrectFull;
+    dstrectLocal = _dstrect ? *_dstrect : dstrectFull;
+    srcrect = &srcrectLocal;
+    dstrect = &dstrectLocal;
 
-    if (!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
+    printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
+
+    if (/*!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h*/true) {
         // Much simpler.
+        printf(", taking shortcut\n");
         rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
         goto end;
     }
+    printf("\n");
 
     if (!rtn) {
         src = SDLCompat_CreateSurfaceDuplicateFormat(SDLCOMPAT_INVALID_FLAG, (SDL_Rect *) srcrect, texture);
         rtn = -!src;
+        rtn = !rtn ? SDL_SetAlpha(src, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE) : rtn;
     }
     rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, src, nullptr) : rtn;
 
     assertm(srcrect->w && srcrect->h, "Divide by zero caused by srcrect");
-    zoomx = dstrect->w / srcrect->w; zoomy = dstrect->h / srcrect->h;
+    zoomx = (double) dstrect->w / srcrect->w; zoomy = (double) dstrect->h / srcrect->h;
+    printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
     if (flip & SDL_FLIP_HORIZONTAL)
         zoomx = -zoomx;
     if (flip & SDL_FLIP_VERTICAL)
@@ -830,7 +871,8 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
         rtn = -!mid;
     }
     SDL_FreeSurface(src); src = nullptr;
-    rtn = !rtn ? SDL_BlitSurface(mid, nullptr, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
+    printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
+    rtn = !rtn ? SDL_BlitSurface(mid, nullptr, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;  // !! Disable alpha blending?
     SDL_FreeSurface(mid); mid = nullptr;
 
     end:
@@ -847,6 +889,7 @@ int SDL_QueryTexture(SDL_Texture *texture, Uint32 *format, int *access, int *w, 
         *w = texture->w;
     if (h)
         *h = texture->h;
+    return 0;
 }
 
 // Locking an area in the texture is not implemented.
@@ -869,6 +912,9 @@ void SDL_UnlockTexture(SDL_Texture *texture) {
 
 int SDL_UpdateTexture(SDL_Texture *texture, const SDL_Rect *rect, const void *pixels, int pitch) {
     int rtn = 0;
+    SDL_Rect fullRect = {0, 0, texture->w, texture->h};
+    if (!rect)
+        rect = &fullRect;
 
     SDL_Surface *sprite = SDL_CreateRGBSurfaceFrom((void *) pixels, \
                                                    rect->w, \
@@ -881,13 +927,10 @@ int SDL_UpdateTexture(SDL_Texture *texture, const SDL_Rect *rect, const void *pi
                                                    texture->format->Amask);
     rtn = -!sprite;
 
-    SDL_BlendMode prevBlendMode;
-    rtn = !rtn ? SDL_GetTextureBlendMode(texture, &prevBlendMode) : rtn;
-    rtn = !rtn ? SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE) : rtn;
-
+    rtn = !rtn ? SDL_SetAlpha(sprite, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE) : rtn;
     rtn = !rtn ? SDL_BlitSurface(sprite, nullptr, texture, (SDL_Rect *) rect) : rtn;
+    SDL_FreeSurface(sprite); sprite = nullptr;
 
-    rtn = !rtn ? SDL_SetTextureBlendMode(texture, prevBlendMode) : rtn;
     return rtn;
 }
 
