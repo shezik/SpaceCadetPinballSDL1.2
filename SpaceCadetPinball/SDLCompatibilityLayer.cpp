@@ -294,6 +294,14 @@ static SDL_Surface *SDLCompat_CreateSurfaceDuplicateFormat(Uint32 flags, SDL_Rec
                                                    source->format->Amask);
     newSurface->unused1 = source->unused1;
     SDL_SetAlpha(newSurface, (flags & SDL_SRCALPHA) ? (SDL_SRCALPHA | SDL_RLEACCEL) : 0, SDL_ALPHA_OPAQUE);
+
+    // Copy palette if required
+    if (source->format->BitsPerPixel <= 8) {
+        int ncolors = source->format->palette->ncolors;
+        newSurface->format->palette->ncolors = ncolors;
+        SDL_memcpy(newSurface->format->palette->colors, source->format->palette->colors, ncolors * sizeof(SDL_Color));
+    }
+
     return newSurface;
 }
 
@@ -392,11 +400,11 @@ void SDL_DestroyWindow(SDL_Window *window) {
 SDL_Renderer *SDL_CreateRenderer(SDL_Window *window, int, Uint32) {
     SDL_Renderer *newRenderer = new SDL_Renderer{0};
     assertm(!window->Renderer, "Renderer already exists for this window");
-    printf("newRenderer pointer: %p\n", newRenderer);
-    printf("Window pointer: %p\n", window);
-    printf("Window width: %d\n", window->tempSize.w);
-    printf("Window height: %d\n", window->tempSize.h);
-    printf("Window flags: %x\n", window->tempFlags);
+    // printf("newRenderer pointer: %p\n", newRenderer);
+    // printf("Window pointer: %p\n", window);
+    // printf("Window width: %d\n", window->tempSize.w);
+    // printf("Window height: %d\n", window->tempSize.h);
+    // printf("Window flags: %x\n", window->tempFlags);
     newRenderer->ClipSource = newRenderer->RenderTarget = newRenderer->InitialRenderTarget = SDL_SetVideoMode(window->tempSize.w, window->tempSize.h, 16, window->tempFlags);  // !! Hardcoded bpp?
     window->Renderer = newRenderer;
     return newRenderer;
@@ -409,7 +417,7 @@ int SDL_GetRendererInfo(SDL_Renderer *, SDL_RendererInfo *info) {
 }
 
 int SDL_GetRendererOutputSize(SDL_Renderer *renderer, int *w, int *h) {
-    printf("Renderer output size: %d x %d\n", renderer->InitialRenderTarget->w, renderer->InitialRenderTarget->h);
+    // printf("Renderer output size: %d x %d\n", renderer->InitialRenderTarget->w, renderer->InitialRenderTarget->h);
     if (w)
         *w = renderer->InitialRenderTarget->w;
     if (h)
@@ -440,11 +448,11 @@ static int SDLCompat_BlitClipSource(SDL_Renderer *renderer) {
 
 int SDL_RenderClear(SDL_Renderer *renderer) {
     int rtn = 0;
-    printf("RenderTarget: %p\n", renderer->RenderTarget);
+    // printf("RenderTarget: %p\n", renderer->RenderTarget);
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
-    printf("ClipSource: %p\n", renderer->ClipSource);
-    printf("ClipSource->format: %p\n", renderer->ClipSource->format);
-    printf("ClipSource->format->BitsPerPixel: %d\n", renderer->ClipSource->format->BitsPerPixel);
+    // printf("ClipSource: %p\n", renderer->ClipSource);
+    // printf("ClipSource->format: %p\n", renderer->ClipSource->format);
+    // printf("ClipSource->format->BitsPerPixel: %d\n", renderer->ClipSource->format->BitsPerPixel);
 
     rtn = !rtn ? SDL_FillRect(renderer->ClipSource, \
                               nullptr, \
@@ -837,31 +845,43 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
     srcrect = &srcrectLocal;
     dstrect = &dstrectLocal;
 
-    printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
+    // printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
 
-    if (/*!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h*/true) {
+    if (!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
         // Much simpler.
-        printf(", taking shortcut\n");
+        // printf(", taking shortcut\n");
         rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
         goto end;
     }
     printf("\n");
-
-    if (!rtn) {
-        src = SDLCompat_CreateSurfaceDuplicateFormat(SDLCOMPAT_INVALID_FLAG, (SDL_Rect *) srcrect, texture);
-        rtn = -!src;
-        rtn = !rtn ? SDL_SetAlpha(src, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE) : rtn;
-    }
-    rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, src, nullptr) : rtn;
-
+    
     assertm(srcrect->w && srcrect->h, "Divide by zero caused by srcrect");
     zoomx = (double) dstrect->w / srcrect->w; zoomy = (double) dstrect->h / srcrect->h;
-    printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
     if (flip & SDL_FLIP_HORIZONTAL)
         zoomx = -zoomx;
     if (flip & SDL_FLIP_VERTICAL)
         zoomy = -zoomy;
-    
+    // printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
+
+    if (angle) {
+        if (!rtn) {
+            src = SDLCompat_CreateSurfaceDuplicateFormat(SDLCOMPAT_INVALID_FLAG, (SDL_Rect *) srcrect, texture);
+            rtn = -!src;
+            rtn = !rtn ? SDL_SetAlpha(src, DEFAULT_ALPHA_MODE, SDL_ALPHA_OPAQUE) : rtn;
+        }
+        rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, src, nullptr) : rtn;
+        srcrect = nullptr;
+    } else {
+        // No rotation required, try to speed up a bit
+        src = texture;
+        SDL_Rect srcrectNew;
+        srcrectNew.w = srcrect->w * abs(zoomx) + 0.5;
+        srcrectNew.h = srcrect->h * abs(zoomy) + 0.5;
+        srcrectNew.x = zoomx > 0 ? (srcrect->x * zoomx + 0.5) : ((srcrectNew.w - 1) - (srcrect->x * -zoomx) + 0.5);
+        srcrectNew.y = zoomy > 0 ? (srcrect->y * zoomy + 0.5) : ((srcrectNew.h - 1) - (srcrect->y * -zoomy) + 0.5);
+        srcrectLocal = srcrectNew;
+    }
+
     if (!rtn) {
         if (angle) {
             mid = rotozoomSurfaceXY(src, angle, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
@@ -869,10 +889,14 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
             mid = zoomSurface(src, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
         }
         rtn = -!mid;
+        SDL_SetAlpha(mid, 0, SDL_ALPHA_OPAQUE);  // weird
     }
-    SDL_FreeSurface(src); src = nullptr;
-    printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
-    rtn = !rtn ? SDL_BlitSurface(mid, nullptr, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;  // !! Disable alpha blending?
+
+    if (src != texture) {
+        SDL_FreeSurface(src); src = nullptr;
+    }
+    // printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
+    rtn = !rtn ? SDL_BlitSurface(mid, srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
     SDL_FreeSurface(mid); mid = nullptr;
 
     end:

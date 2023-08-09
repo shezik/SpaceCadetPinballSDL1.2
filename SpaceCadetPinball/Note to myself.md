@@ -19,3 +19,8 @@ What is going on at line 496 in render.cpp?
 
 Explicit conversion of types inside SDL_Rect at line 139 in fullscrn.cpp.  
 Explicit conversion of int to SDLKey at line 571 in options.cpp.
+
+Check delta time calculation.
+Copy palette, build in release mode.
+
+Get over the `rtn = !rtn ? do_something() : rtn;` stuff.

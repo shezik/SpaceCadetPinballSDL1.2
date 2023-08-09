@@ -199,19 +199,15 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		pb::SelectDatFile(searchPaths);
 
 		// Second step: run updates that depend on .DAT file selection
-		printf("1\n");
 		options::InitSecondary();
 
-		printf("2\n");
 		Sound::Init(mixOpened, Options.SoundChannels, Options.Sounds, Options.SoundVolume);
 		if (!mixOpened)
 			Options.Sounds = false;
 
-		printf("3\n");
 		if (!midi::music_init(mixOpened, Options.MusicVolume))
 			Options.Music = false;
 
-		printf("4\n");
 		if (pb::init())
 		{
 			std::string message = "The .dat file is missing.\n"
@@ -223,17 +219,13 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 					message = message + (path[0] ? path : "working directory") + "\n";
 				}
 			}
-			printf("5\n");
 			pb::ShowMessageBox(SDL_MESSAGEBOX_ERROR, "Could not load game data", message.c_str());
 			return 1;
 		}
 
-		printf("6\n");
 		fullscrn::init();
 
-		printf("7\n");
 		pb::reset_table();
-		printf("8\n");
 		pb::firsttime_setup();
 
 		if (strstr(lpCmdLine, "-fullscreen"))
@@ -243,61 +235,41 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 
 		if (!Options.FullScreen)
 		{
-			printf("9\n");
 			auto resInfo = &fullscrn::resolution_array[fullscrn::GetResolution()];
-			printf("10\n");
 			SDL_SetWindowSize(MainWindow, resInfo->TableWidth, resInfo->TableHeight);
 		}
 		SDL_ShowWindow(window);
-		printf("11\n");
 		fullscrn::set_screen_mode(Options.FullScreen);
 
-		if (strstr(lpCmdLine, "-demo")) {
-			printf("12\n");
+		if (strstr(lpCmdLine, "-demo"))
 			pb::toggle_demo();
-		} else
+		else
 			pb::replay_level(false);
 
-		printf("13\n");
 		MainLoop();
 
-		printf("14\n");
 		options::uninit();
-		printf("15\n");
 		midi::music_shutdown();
-		printf("16\n");
 		Sound::Close();
-		printf("17\n");
 		pb::uninit();
 
-		printf("18\n");
 		ImGui_Render_Shutdown();
-		printf("19\n");
 		ImGui_ImplSDL2_Shutdown();
-		printf("20\n");
 		ImGui::DestroyContext();
 	}
 	while (restart);
 
 	if (!noAudio)
 	{
-		if (mixOpened) {
-			printf("21\n");
+		if (mixOpened)
 			Mix_CloseAudio();
-		}
-		printf("22\n");
 		Mix_Quit();
 	}
 
-	printf("23\n");
 	SDL_free(basePath);
-	printf("24\n");
 	SDL_free(prefPath);
-	printf("25\n");
 	SDL_DestroyRenderer(renderer);
-	printf("26\n");
 	SDL_DestroyWindow(window);
-	printf("27\n");
 	SDL_Quit();
 
 	return return_value;
@@ -307,34 +279,31 @@ void winmain::MainLoop()
 {
 	bQuit = false;
 	unsigned updateCounter = 0, frameCounter = 0;
-	printf("28\n");
 	auto frameStart = Clock::now();
 	double UpdateToFrameCounter = 0;
-	printf("29\n");
 	DurationMs sleepRemainder(0), frameDuration(TargetFrameTime);
 	auto prevTime = frameStart;
 
 	while (true)
 	{
-		if (DispFrameRate)
+		if (/*DispFrameRate*/true)
 		{
 			auto curTime = Clock::now();
 			if (curTime - prevTime > DurationMs(1000))
 			{
-				char buf[60];
+				// char buf[60];
 				auto elapsedSec = DurationMs(curTime - prevTime).count() * 0.001;
-				printf("30\n");
-				snprintf(buf, sizeof buf, "Updates/sec = %02.02f Frames/sec = %02.02f ",
-				         updateCounter / elapsedSec, frameCounter / elapsedSec);
-				printf("31\n");
-				SDL_SetWindowTitle(MainWindow, buf);
-				FpsDetails = buf;
+				// snprintf(buf, sizeof buf, "Updates/sec = %02.02f Frames/sec = %02.02f ",
+				//          updateCounter / elapsedSec, frameCounter / elapsedSec);
+				printf("Updates/sec = %02.02f Frames/sec = %02.02f\n",
+          				updateCounter / elapsedSec, frameCounter / elapsedSec);
+				// SDL_SetWindowTitle(MainWindow, buf);
+				// FpsDetails = buf;
 				frameCounter = updateCounter = 0;
 				prevTime = curTime;
 			}
 		}
 
-		printf("32\n");
 		if (!ProcessWindowMessages() || bQuit)
 			break;
 
@@ -343,13 +312,10 @@ void winmain::MainLoop()
 			if (mouse_down)
 			{
 				int x, y, w, h;
-				printf("40\n");
 				SDL_GetMouseState(&x, &y);
-				printf("41\n");
 				SDL_GetWindowSize(MainWindow, &w, &h);
 				float dx = static_cast<float>(last_mouse_x - x) / static_cast<float>(w);
 				float dy = static_cast<float>(y - last_mouse_y) / static_cast<float>(h);
-				printf("42\n");
 				pb::ballset(dx, dy);
 
 				// Original creates continuous mouse movement with mouse capture.
@@ -364,7 +330,6 @@ void winmain::MainLoop()
 					// Mouse warp does not work over remote desktop or in some VMs
 					x = abs(x - xMod);
 					y = abs(y - yMod);
-					printf("43\n");
 					SDL_WarpMouseInWindow(MainWindow, x, y);
 				}
 
@@ -374,16 +339,13 @@ void winmain::MainLoop()
 			if (!single_step && !no_time_loss)
 			{
 				auto dt = static_cast<float>(frameDuration.count());
-				printf("44, dtMilliSec: %f\n", dt);
+				printf("dtMilliSec: %f\n", dt);
 				pb::frame(dt);
-				printf("52\n");
 				if (DispGRhistory)
 				{
 					auto targetSize = static_cast<unsigned>(static_cast<float>(Options.UpdatesPerSecond) * gfrWindow);
-					printf("53\n");
 					if (gfrDisplay.size() != targetSize)
 					{
-						printf("54\n");
 						gfrDisplay.resize(targetSize, static_cast<float>(TargetFrameTime.count()));
 						gfrOffset = 0;
 					}
@@ -396,34 +358,22 @@ void winmain::MainLoop()
 
 			if (UpdateToFrameCounter >= UpdateToFrameRatio)
 			{
-				if (Options.HideCursor && CursorIdleCounter <= 0) {
-					printf("55\n");
-					ImGui::SetMouseCursor(ImGuiMouseCursor_None);
-				}
-				printf("56\n");
+				// if (Options.HideCursor && CursorIdleCounter <= 0)
+				// 	ImGui::SetMouseCursor(ImGuiMouseCursor_None);  // !! disable ui
 				// ImGui_ImplSDL2_NewFrame();  // !! disable ui
-				printf("57\n");
 				// ImGui_Render_NewFrame();  // !! disable ui
-				printf("58\n");
 				// ImGui::NewFrame();  // !! disable ui
-				printf("59\n");
 				// RenderUi();  // !! disable ui
 
-				printf("60\n");
 				SDL_RenderClear(Renderer);
 				// Alternative clear hack, clear might fail on some systems
 				// Todo: remove original clear, if save for all platforms
-				printf("61\n");
 				// SDL_RenderFillRect(Renderer, nullptr);  // !! disable ui
-				printf("62\n");
 				render::PresentVScreen();
 
-				printf("63\n");
 				// ImGui::Render();  // !! disable ui
-				printf("64\n");
 				// ImGui_Render_RenderDrawData(ImGui::GetDrawData());  // !! disable ui
 
-				printf("65\n");
 				SDL_RenderPresent(Renderer);
 				frameCounter++;
 				UpdateToFrameCounter -= UpdateToFrameRatio;
@@ -454,23 +404,16 @@ void winmain::MainLoop()
 				}
 			}
 
-			printf("66\n");
 			auto updateEnd = Clock::now();
-			printf("67\n");
 			auto targetTimeDelta = TargetFrameTime - DurationMs(updateEnd - frameStart) - sleepRemainder;
 
 			TimePoint frameEnd;
-			printf("68\n");
 			if (targetTimeDelta > DurationMs::zero() && !Options.UncappedUpdatesPerSecond)
 			{
-				if (Options.HybridSleep) {
-					printf("69\n");
+				if (Options.HybridSleep)
 					HybridSleep(targetTimeDelta);
-				} else {
-					printf("70\n");
+				else
 					std::this_thread::sleep_for(targetTimeDelta);
-				}
-				printf("71\n");
 				frameEnd = Clock::now();
 			}
 			else
@@ -479,10 +422,8 @@ void winmain::MainLoop()
 			}
 
 			// Limit duration to 2 * target time
-			printf("72\n");
 			sleepRemainder = Clamp(DurationMs(frameEnd - updateEnd) - targetTimeDelta, -TargetFrameTime,
 			                       TargetFrameTime);
-			printf("73\n");
 			frameDuration = std::min<DurationMs>(DurationMs(frameEnd - frameStart), 2 * TargetFrameTime);
 			frameStart = frameEnd;
 			UpdateToFrameCounter++;
@@ -1092,12 +1033,9 @@ int winmain::ProcessWindowMessages()
 	SDL_Event event;
 	if (has_focus)
 	{
-		printf("33\n");
 		idleWait = static_cast<int>(TargetFrameTime.count());
-		printf("34\n");
 		while (SDL_PollEvent(&event))
 		{
-			printf("35\n");
 			if (!event_handler(&event))
 				return 0;
 		}
@@ -1106,14 +1044,10 @@ int winmain::ProcessWindowMessages()
 	}
 
 	// Progressively wait longer when transitioning to idle
-	printf("36\n");
 	idleWait = std::min(idleWait + static_cast<int>(TargetFrameTime.count()), 500);
-	printf("37\n");
 	if (SDL_WaitEventTimeout(&event, idleWait))
 	{
-		printf("38\n");
 		idleWait = static_cast<int>(TargetFrameTime.count());
-		printf("39\n");
 		return event_handler(&event);
 	}
 	return 1;
