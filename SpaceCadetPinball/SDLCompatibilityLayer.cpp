@@ -634,9 +634,11 @@ static int SDLCompat_ParsePixelFormat(SDLCompat_PixelFormatEnum fmt, int *bpp, U
                 _Bmask = 0x000000ff;
                 break;
         }
+    } else if (fmt == SDL_PIXELFORMAT_INDEX8) {
+        _bpp = 8;
+        _Rmask = _Gmask = _Bmask = _Amask = 0;
     } else {
-        // Other non-bpp-32 format goes here
-        return -1;  // But they are not implemented yet
+        return -1;
     }
 
     if (bpp)
@@ -845,11 +847,11 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
     srcrect = &srcrectLocal;
     dstrect = &dstrectLocal;
 
-    // printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
+    printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
 
-    if (!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
+    if (/*!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h*/true) {
         // Much simpler.
-        // printf(", taking shortcut\n");
+        printf(", taking shortcut\n");
         rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
         goto end;
     }
@@ -861,7 +863,7 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
         zoomx = -zoomx;
     if (flip & SDL_FLIP_VERTICAL)
         zoomy = -zoomy;
-    // printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
+    printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
 
     if (angle) {
         if (!rtn) {
@@ -895,7 +897,7 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
     if (src != texture) {
         SDL_FreeSurface(src); src = nullptr;
     }
-    // printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
+    printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
     rtn = !rtn ? SDL_BlitSurface(mid, srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
     SDL_FreeSurface(mid); mid = nullptr;
 
@@ -961,6 +963,17 @@ int SDL_UpdateTexture(SDL_Texture *texture, const SDL_Rect *rect, const void *pi
 int SDL_SetTextureColorMod(SDL_Texture *texture, Uint8 r, Uint8 g, Uint8 b) {
     // !! Not implemented yet
     return 0;
+}
+
+// Quite unsafe.
+int SDL_SetPaletteColors(SDL_Palette *palette, const SDL_Color *colors, int firstcolor, int ncolors) {
+    assertm(palette, "Palette not allocated");
+    printf("Copying palette...\n");
+    if ( colors != (palette->colors + firstcolor) ) {
+		SDL_memcpy(palette->colors + firstcolor, colors,
+		       ncolors * sizeof(*colors));
+	}
+    printf("done!\n");
 }
 
 #define SDL_InvalidParamError(param)    SDL_SetError("Parameter '%s' is invalid", (param))

@@ -48,19 +48,20 @@ static_assert(sizeof(ColorRgba) == 4, "Wrong size of RGBA color");
 struct gdrv_bitmap8
 {
 	gdrv_bitmap8(int width, int height);
-	gdrv_bitmap8(int width, int height, bool indexed);
-	gdrv_bitmap8(int width, int height, bool indexed, bool bmpBuff);
 	gdrv_bitmap8(const struct dat8BitBmpHeader& header);
 	~gdrv_bitmap8();
 	void ScaleIndexed(float scaleX, float scaleY);
+	void UpdateScaledIndexedBmp(float scaleX, float scaleY);
+	void UpdateScaledIndexedBmp();
 	void CreateTexture(const char* scaleHint, int access);
 	void BlitToTexture();
-	ColorRgba* BmpBufPtr1;
 	char* IndexedBmpPtr;
+	char* ScaledIndexedBmpPtr;
+	float ScaleX, ScaleY;
+	int PrevScaledIndexedSize;
 	int Width;
 	int Height;
 	int Stride;
-	int IndexedStride;
 	BitmapTypes BitmapType;
 	int XPosition;
 	int YPosition;
@@ -74,15 +75,13 @@ class gdrv
 public:
 	static int display_palette(ColorRgba* plt);
 	static void fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, uint8_t fillChar);
-	static void fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, ColorRgba fillColor);
 	static void copy_bitmap(gdrv_bitmap8* dstBmp, int width, int height, int xOff, int yOff, gdrv_bitmap8* srcBmp,
 	                        int srcXOff, int srcYOff);
 	static void copy_bitmap_w_transparency(gdrv_bitmap8* dstBmp, int width, int height, int xOff, int yOff,
 	                                       gdrv_bitmap8* srcBmp, int srcXOff, int srcYOff);
 	static void ScrollBitmapHorizontal(gdrv_bitmap8* bmp, int xStart);
 	static void grtext_draw_ttext_in_box();
-	static void ApplyPalette(gdrv_bitmap8& bmp);
 	static void CreatePreview(gdrv_bitmap8& bmp);
-private:
 	static ColorRgba current_palette[256];
+	static SDL_Color current_palette_SDL[256];
 };

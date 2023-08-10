@@ -204,6 +204,8 @@ typedef enum {
     SDL_PIXELFORMAT_BGRA8888,
     SDL_PIXELFORMAT_ARGB8888,
 
+    SDL_PIXELFORMAT_INDEX8,
+
 // ____32 formats' memory layout is exactly as its name and platform-independent,
 // while ____8888 ones have their byte order that the name implies reversed on little-endian systems.
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -310,6 +312,7 @@ int SDL_LockTexture(SDL_Texture *, const SDL_Rect *, void **, int *);
 void SDL_UnlockTexture(SDL_Texture *);
 int SDL_UpdateTexture(SDL_Texture *, const SDL_Rect *, const void *, int);
 int SDL_SetTextureColorMod(SDL_Texture *, Uint8, Uint8, Uint8);
+int SDL_SetPaletteColors(SDL_Palette *, const SDL_Color *, int, int);
 
 char *SDL_GetPrefPath(const char *, const char *);
 char *SDL_GetBasePath(void);

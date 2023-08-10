@@ -101,8 +101,11 @@ void render_sprite::ball_set(gdrv_bitmap8* bmp, float depth, int xPos, int yPos)
 
 void render::init(gdrv_bitmap8* bmp, int width, int height)
 {
-	vscreen = new gdrv_bitmap8(width, height, false);
+	printf("8\n");
+	vscreen = new gdrv_bitmap8(width, height);
+	printf("9\n");
 	zscreen = new zmap_header_type(width, height, width);
+	printf("10\n");
 	zdrv::fill(zscreen, zscreen->Width, zscreen->Height, 0, 0, 0xFFFF);
 	vscreen_rect.YPosition = 0;
 	vscreen_rect.XPosition = 0;
@@ -110,16 +113,23 @@ void render::init(gdrv_bitmap8* bmp, int width, int height)
 	vscreen_rect.Height = height;
 	vscreen->YPosition = 0;
 	vscreen->XPosition = 0;
+	printf("11\n");
 	for (auto& ballBmp : ball_bitmap)
-		ballBmp = new gdrv_bitmap8(64, 64, false);
+		ballBmp = new gdrv_bitmap8(64, 64);
 
+	printf("12\n");
 	background_bitmap = bmp;
-	if (bmp)
+	if (bmp) {
+		printf("13\n");
 		gdrv::copy_bitmap(vscreen, width, height, 0, 0, bmp, 0, 0);
-	else
+	} else {
+		printf("14\n");
 		gdrv::fill_bitmap(vscreen, vscreen->Width, vscreen->Height, 0, 0, 0);
+	}
 
+	printf("15\n");
 	recreate_screen_texture();
+	printf("16\n");
 }
 
 void render::uninit()
@@ -139,7 +149,8 @@ void render::uninit()
 
 void render::recreate_screen_texture()
 {
-	vscreen->CreateTexture(options::Options.LinearFiltering ? "linear" : "nearest", SDL_TEXTUREACCESS_STREAMING);
+	// vscreen->CreateTexture(options::Options.LinearFiltering ? "linear" : "nearest", SDL_TEXTUREACCESS_STREAMING);
+	vscreen->UpdateScaledIndexedBmp((float) 393 / 600, (float) 272 / 416);
 }
 
 void render::update()
@@ -458,7 +469,7 @@ void render::PresentVScreen()
 
 	if (offset_x == 0 && offset_y == 0)
 	{
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, &DestinationRect);
+		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, /*&DestinationRect*/ nullptr);
 	}
 	else
 	{

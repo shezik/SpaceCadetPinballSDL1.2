@@ -49,8 +49,8 @@ void zdrv::paint(int width, int height, gdrv_bitmap8* dstBmp, int dstBmpXOff, in
 {
 	assertm(srcBmp->BitmapType != BitmapTypes::Spliced, "Wrong bmp type");
 
-	auto srcPtr = &srcBmp->BmpBufPtr1[srcBmp->Stride * srcBmpYOff + srcBmpXOff];
-	auto dstPtr = &dstBmp->BmpBufPtr1[dstBmp->Stride * dstBmpYOff + dstBmpXOff];
+	auto srcPtr = &srcBmp->IndexedBmpPtr[srcBmp->Stride * srcBmpYOff + srcBmpXOff];
+	auto dstPtr = &dstBmp->IndexedBmpPtr[dstBmp->Stride * dstBmpYOff + dstBmpXOff];
 	auto srcPtrZ = &srcZMap->ZPtr1[srcZMap->Stride * srcZMapYOff + srcZMapXOff];
 	auto dstPtrZ = &dstZMap->ZPtr1[dstZMap->Stride * dstZMapYOff + dstZMapXOff];
 
@@ -82,15 +82,16 @@ void zdrv::paint_flat(int width, int height, gdrv_bitmap8* dstBmp, int dstBmpXOf
 {
 	assertm(srcBmp->BitmapType != BitmapTypes::Spliced, "Wrong bmp type");
 
-	auto dstPtr = &dstBmp->BmpBufPtr1[dstBmp->Stride * dstBmpYOff + dstBmpXOff];
-	auto srcPtr = &srcBmp->BmpBufPtr1[srcBmp->Stride * srcBmpYOff + srcBmpXOff];
+	auto dstPtr = &dstBmp->IndexedBmpPtr[dstBmp->Stride * dstBmpYOff + dstBmpXOff];
+	auto srcPtr = &srcBmp->IndexedBmpPtr[srcBmp->Stride * srcBmpYOff + srcBmpXOff];
 	auto zPtr = &zMap->ZPtr1[zMap->Stride * dstZMapYOff + dstZMapXOff];
 
 	for (int y = height; y > 0; y--)
 	{
 		for (int x = width; x > 0; --x)
 		{
-			if ((*srcPtr).Color && *zPtr > depth)
+			printf("Color index: %d\n", *srcPtr);
+			if (gdrv::current_palette[*srcPtr].Color && *zPtr > depth)
 			{
 				*dstPtr = *srcPtr;
 			}

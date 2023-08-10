@@ -46,7 +46,7 @@ void GroupData::AddEntry(EntryData* entry)
 			if (srcBmp->BitmapType == BitmapTypes::Spliced)
 			{
 				// Get rid of spliced bitmap early on, to simplify render pipeline
-				auto bmp = new gdrv_bitmap8(srcBmp->Width, srcBmp->Height, true);
+				auto bmp = new gdrv_bitmap8(srcBmp->Width, srcBmp->Height);
 				auto zMap = new zmap_header_type(srcBmp->Width, srcBmp->Height, srcBmp->Width);
 				SplitSplicedBitmap(*srcBmp, *bmp, *zMap);
 
@@ -326,7 +326,7 @@ void DatFile::AddMsgFont(MsgFont* font, const std::string& fontName)
 		assertm(curChar->Width == font->CharWidths[charInd], "Score: mismatched font width");
 		ptrToData += curChar->Width * font->Height + 1;
 
-		auto bmp = new gdrv_bitmap8(curChar->Width, font->Height, true);
+		auto bmp = new gdrv_bitmap8(curChar->Width, font->Height);
 		auto srcPtr = curChar->Data;
 		auto dstPtr = &bmp->IndexedBmpPtr[bmp->Stride * (bmp->Height - 1)];
 		for (auto y = 0; y < font->Height; ++y)

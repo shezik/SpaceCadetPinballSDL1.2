@@ -12,35 +12,25 @@
 #include "SDLCompatibilityLayer.h"
 
 ColorRgba gdrv::current_palette[256]{};
+SDL_Color gdrv::current_palette_SDL[256]{};
 
-gdrv_bitmap8::gdrv_bitmap8(int width, int height) : gdrv_bitmap8(width, height, true, true)
-{
-}
-
-gdrv_bitmap8::gdrv_bitmap8(int width, int height, bool indexed) : gdrv_bitmap8(width, height, indexed, true)
-{
-}
-
-gdrv_bitmap8::gdrv_bitmap8(int width, int height, bool indexed, bool bmpBuff)
+gdrv_bitmap8::gdrv_bitmap8(int width, int height)
 {
 	assertm(width >= 0 && height >= 0, "Negative bitmap8 dimensions");
 
 	Width = width;
 	Height = height;
 	Stride = width;
-	IndexedStride = width;
 	BitmapType = BitmapTypes::DibBitmap;
 	Texture = nullptr;
-	IndexedBmpPtr = nullptr;
-	BmpBufPtr1 = nullptr;
+	ScaledIndexedBmpPtr = nullptr;
+	ScaleX = ScaleY = 1.0;
+	PrevScaledIndexedSize = 0;
 	XPosition = 0;
 	YPosition = 0;
 	Resolution = 0;
 
-	if (indexed)
-		IndexedBmpPtr = new char[Height * IndexedStride];
-	if (bmpBuff)
-		BmpBufPtr1 = new ColorRgba[Height * Stride];
+	IndexedBmpPtr = new char[Height * Stride];
 }
 
 gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
@@ -56,8 +46,10 @@ gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
 
 	Width = header.Width;
 	Stride = header.Width;
-	IndexedStride = header.Width;
 	Height = header.Height;
+	ScaledIndexedBmpPtr = nullptr;
+	ScaleX = ScaleY = 1.0;
+	PrevScaledIndexedSize = 0;
 	XPosition = header.XPosition;
 	YPosition = header.YPosition;
 	Resolution = header.Resolution;
@@ -73,23 +65,20 @@ gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
 		if (BitmapType == BitmapTypes::RawBitmap)
 			assertm(Width % 4 == 0 || header.IsFlagSet(bmp8Flags::RawBmpUnaligned), "Wrong raw bitmap align flag");
 		if (Width % 4)
-			IndexedStride = Width - Width % 4 + 4;
-		sizeInBytes = Height * IndexedStride;
+			Stride = Width - Width % 4 + 4;
+		sizeInBytes = Height * Stride;
 		assertm(sizeInBytes == header.Size, "Wrong bitmap8 size");
 	}
 
 	IndexedBmpPtr = new char[sizeInBytes];
-	BmpBufPtr1 = new ColorRgba[Stride * Height];
 }
 
 gdrv_bitmap8::~gdrv_bitmap8()
 {
-	if (BitmapType != BitmapTypes::None)
-	{
-		delete[] BmpBufPtr1;
+	if (BitmapType != BitmapTypes::None) {  // !! Maybe we do not need this condition anymore
 		delete[] IndexedBmpPtr;
-		if (Texture)
-			SDL_DestroyTexture(Texture);
+		if (ScaledIndexedBmpPtr)
+			delete[] ScaledIndexedBmpPtr;
 	}
 }
 
@@ -101,28 +90,57 @@ void gdrv_bitmap8::ScaleIndexed(float scaleX, float scaleY)
 		return;
 	}
 
-	int newWidht = static_cast<int>(Width * scaleX), newHeight = static_cast<int>(Height * scaleY);
-	if (Width == newWidht && Height == newHeight)
+	int newWidth = static_cast<int>(Width * scaleX), newHeight = static_cast<int>(Height * scaleY);
+	if (Width == newWidth && Height == newHeight)
 		return;
 
-	auto newIndBuf = new char[newHeight * newWidht];
+	auto newIndBuf = new char[newHeight * newWidth];
 	for (int dst = 0, y = 0; y < newHeight; y++)
 	{
-		for (int x = 0; x < newWidht; x++, dst++)
+		for (int x = 0; x < newWidth; x++, dst++)
 		{
 			auto px = static_cast<int>(x / scaleX);
 			auto py = static_cast<int>(y / scaleY);
-			newIndBuf[dst] = IndexedBmpPtr[(py * IndexedStride) + px];
+			newIndBuf[dst] = IndexedBmpPtr[(py * Stride) + px];
 		}
 	}
 
-	Stride = IndexedStride = Width = newWidht;
+	Stride = Width = newWidth;
 	Height = newHeight;
 
-	delete IndexedBmpPtr;
+	delete[] IndexedBmpPtr;
 	IndexedBmpPtr = newIndBuf;
-	delete BmpBufPtr1;
-	BmpBufPtr1 = new ColorRgba[Stride * Height];
+}
+
+void gdrv_bitmap8::UpdateScaledIndexedBmp(float scaleX, float scaleY)
+{
+	ScaleX = scaleX; ScaleY = scaleY;
+	printf("17\n");
+	UpdateScaledIndexedBmp();
+	printf("18\n");
+	CreateTexture("nearest", SDL_TEXTUREACCESS_STREAMING);  // !!
+}
+
+void gdrv_bitmap8::UpdateScaledIndexedBmp()
+{
+	int newWidth = static_cast<int>(Width * ScaleX), newHeight = static_cast<int>(Height * ScaleY);
+
+	if (!ScaledIndexedBmpPtr || (newHeight * newWidth != PrevScaledIndexedSize)) {
+		printf("New size: %d, old size: %d, reallocating...\n", newHeight * newWidth, PrevScaledIndexedSize);
+		delete[] ScaledIndexedBmpPtr;
+		PrevScaledIndexedSize = newHeight * newWidth;
+		ScaledIndexedBmpPtr = new char[PrevScaledIndexedSize];
+	}
+
+	for (int dst = 0, y = 0; y < newHeight; y++)
+	{
+		for (int x = 0; x < newWidth; x++, dst++)
+		{
+			auto px = static_cast<int>(x / ScaleX);
+			auto py = static_cast<int>(y / ScaleY);
+			ScaledIndexedBmpPtr[dst] = IndexedBmpPtr[(py * Stride) + px];
+		}
+	}
 }
 
 void gdrv_bitmap8::CreateTexture(const char* scaleHint, int access)
@@ -132,22 +150,28 @@ void gdrv_bitmap8::CreateTexture(const char* scaleHint, int access)
 		SDL_DestroyTexture(Texture);
 	}
 
+	int newWidth = static_cast<int>(Width * ScaleX), newHeight = static_cast<int>(Height * ScaleY);
+
 	UsingSdlHint hint{ SDL_HINT_RENDER_SCALE_QUALITY, scaleHint };
 	Texture = SDL_CreateTexture
 	(
 		winmain::Renderer,
-		SDL_PIXELFORMAT_BGRA32,
+		SDL_PIXELFORMAT_INDEX8,
 		access,
-		Width, Height
+		newWidth, newHeight
 	);
+	SDL_SetPaletteColors(Texture->format->palette, gdrv::current_palette_SDL, 0, 256);  // !! Not dynamically updated!
 	SDL_SetTextureBlendMode(Texture, SDL_BLENDMODE_NONE);
 }
 
 void gdrv_bitmap8::BlitToTexture()
 {
 	assertm(Texture, "Updating null texture");
+
+	int newWidth = static_cast<int>(Width * ScaleX), newHeight = static_cast<int>(Height * ScaleY);
+
 	int pitch = 0;
-	ColorRgba* lockedPixels;
+	char* lockedPixels;
 	auto result = SDL_LockTexture
 	(
 		Texture,
@@ -156,9 +180,13 @@ void gdrv_bitmap8::BlitToTexture()
 		&pitch
 	);
 	assertm(result == 0, "Updating non-streaming texture");
-	assertm(static_cast<unsigned>(pitch) == Width * sizeof(ColorRgba), "Padding on vScreen texture");
+	assertm(static_cast<unsigned>(pitch) == newWidth * sizeof(char), "Padding on vScreen texture");
 
-	std::memcpy(lockedPixels, BmpBufPtr1, Width * Height * sizeof(ColorRgba));
+	printf("Scaling...\n");
+	UpdateScaledIndexedBmp();
+	printf("done!\nCopying pixels...\n");
+	std::memcpy(lockedPixels, ScaledIndexedBmpPtr, newWidth * newHeight * sizeof(char));
+	printf("done!\n");
 
 	SDL_UnlockTexture(Texture);
 }
@@ -188,38 +216,29 @@ int gdrv::display_palette(ColorRgba* plt)
 		auto srcClr = plt[index];
 		srcClr.SetAlpha(0xff);		
 		current_palette[index] = ColorRgba{ srcClr };
-		current_palette[index].SetAlpha(2);
+		current_palette[index].SetAlpha(2);  // !! ?
 	}
 
 	current_palette[255] = ColorRgba::White();
 
-	for (const auto group : pb::record_table->Groups)
-	{
-		for (int i = 0; i <= 2; i++)
-		{
-			auto bmp = group->GetBitmap(i);
-			if (bmp)
-			{
-				ApplyPalette(*bmp);
-			}
-		}
-	}
+	printf("Converting palette to SDL format...\n");
+	for (int i = 0; i < 256; i++)
+		current_palette_SDL[i] = SDL_Color{current_palette[i].GetRed(), \
+											current_palette[i].GetGreen(), \
+											current_palette[i].GetBlue(), \
+											current_palette[i].GetAlpha()};
+	printf("done!\n");
 
 	return 0;
 }
 
 void gdrv::fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, uint8_t fillChar)
 {
-	fill_bitmap(bmp, width, height, xOff, yOff, current_palette[fillChar]);
-}
-
-void gdrv::fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, ColorRgba fillColor)
-{
-	auto bmpPtr = &bmp->BmpBufPtr1[bmp->Width * yOff + xOff];
+	auto bmpPtr = &bmp->IndexedBmpPtr[bmp->Width * yOff + xOff];
 	for (; height > 0; --height)
 	{
 		for (int x = width; x > 0; --x)
-			*bmpPtr++ = fillColor;
+			*bmpPtr++ = fillChar;
 		bmpPtr += bmp->Stride - width;
 	}
 }
@@ -227,12 +246,12 @@ void gdrv::fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int y
 void gdrv::copy_bitmap(gdrv_bitmap8* dstBmp, int width, int height, int xOff, int yOff, gdrv_bitmap8* srcBmp,
                        int srcXOff, int srcYOff)
 {
-	auto srcPtr = &srcBmp->BmpBufPtr1[srcBmp->Stride * srcYOff + srcXOff];
-	auto dstPtr = &dstBmp->BmpBufPtr1[dstBmp->Stride * yOff + xOff];
+	auto srcPtr = &srcBmp->IndexedBmpPtr[srcBmp->Stride * srcYOff + srcXOff];
+	auto dstPtr = &dstBmp->IndexedBmpPtr[dstBmp->Stride * yOff + xOff];
 
 	for (int y = height; y > 0; --y)
 	{
-		std::memcpy(dstPtr, srcPtr, width * sizeof(ColorRgba));
+		std::memcpy(dstPtr, srcPtr, width * sizeof(char));
 		srcPtr += srcBmp->Stride;
 		dstPtr += dstBmp->Stride;
 	}
@@ -241,14 +260,15 @@ void gdrv::copy_bitmap(gdrv_bitmap8* dstBmp, int width, int height, int xOff, in
 void gdrv::copy_bitmap_w_transparency(gdrv_bitmap8* dstBmp, int width, int height, int xOff, int yOff,
                                       gdrv_bitmap8* srcBmp, int srcXOff, int srcYOff)
 {
-	auto srcPtr = &srcBmp->BmpBufPtr1[srcBmp->Stride * srcYOff + srcXOff];
-	auto dstPtr = &dstBmp->BmpBufPtr1[dstBmp->Stride * yOff + xOff];
+	auto srcPtr = &srcBmp->IndexedBmpPtr[srcBmp->Stride * srcYOff + srcXOff];
+	auto dstPtr = &dstBmp->IndexedBmpPtr[dstBmp->Stride * yOff + xOff];
 
 	for (int y = height; y > 0; --y)
 	{
 		for (int x = width; x > 0; --x)
 		{
-			if ((*srcPtr).Color)
+			printf("Color index: %d\n", *srcPtr);
+			if (current_palette[*srcPtr].Color)
 				*dstPtr = *srcPtr;
 			++srcPtr;
 			++dstPtr;
@@ -261,13 +281,13 @@ void gdrv::copy_bitmap_w_transparency(gdrv_bitmap8* dstBmp, int width, int heigh
 
 void gdrv::ScrollBitmapHorizontal(gdrv_bitmap8* bmp, int xStart)
 {
-	auto srcPtr = bmp->BmpBufPtr1;
+	auto srcPtr = bmp->IndexedBmpPtr;
 	auto startOffset = xStart >= 0 ? 0 : -xStart;
 	auto endOffset = xStart >= 0 ? xStart : 0;
 	auto length = bmp->Width - std::abs(xStart);
 	for (int y = bmp->Height; y > 0; --y)
 	{
-		std::memmove(srcPtr + endOffset, srcPtr + startOffset, length * sizeof(ColorRgba));
+		std::memmove(srcPtr + endOffset, srcPtr + startOffset, length * sizeof(char));
 		srcPtr += bmp->Stride;
 	}
 }
@@ -284,30 +304,13 @@ void gdrv::grtext_draw_ttext_in_box()
 	}
 }
 
-void gdrv::ApplyPalette(gdrv_bitmap8& bmp)
-{
-	if (bmp.BitmapType == BitmapTypes::None)
-		return;
-	assertm(bmp.BitmapType != BitmapTypes::Spliced, "gdrv: wrong bitmap type");
-	assertm(bmp.IndexedBmpPtr != nullptr, "gdrv: non-indexed bitmap");
-
-	// Apply palette, flip horizontally 
-	auto dst = bmp.BmpBufPtr1;
-	for (auto y = bmp.Height - 1; y >= 0; y--)
-	{
-		auto src = reinterpret_cast<uint8_t*>(bmp.IndexedBmpPtr) + bmp.IndexedStride * y;
-		for (auto x = 0; x < bmp.Width; x++)
-		{
-			*dst++ = current_palette[*src++];
-		}
-	}
-}
-
 void gdrv::CreatePreview(gdrv_bitmap8& bmp)
 {
+	/*
 	if (bmp.Texture)
 		return;
 
 	bmp.CreateTexture("nearest", SDL_TEXTUREACCESS_STATIC);
-	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * 4);
+	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * sizeof(char));
+	*/
 }

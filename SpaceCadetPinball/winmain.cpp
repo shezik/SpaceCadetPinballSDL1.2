@@ -208,6 +208,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		if (!midi::music_init(mixOpened, Options.MusicVolume))
 			Options.Music = false;
 
+		printf("1\n");
 		if (pb::init())
 		{
 			std::string message = "The .dat file is missing.\n"
@@ -223,6 +224,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 			return 1;
 		}
 
+		printf("2\n");
 		fullscrn::init();
 
 		pb::reset_table();
@@ -246,6 +248,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		else
 			pb::replay_level(false);
 
+		printf("3\n");
 		MainLoop();
 
 		options::uninit();
@@ -790,8 +793,8 @@ void winmain::RenderUi()
 	a_dialog();
 	high_score::RenderHighScoreDialog();
 	font_selection::RenderDialog();
-	if (ShowSpriteViewer)
-		render::SpriteViewer(&ShowSpriteViewer);
+	// if (ShowSpriteViewer)
+	// 	render::SpriteViewer(&ShowSpriteViewer);
 	options::RenderControlDialog();
 	if (DispGRhistory)
 		RenderFrameTimeDialog();
