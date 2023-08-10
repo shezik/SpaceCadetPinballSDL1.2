@@ -149,8 +149,7 @@ void render::uninit()
 
 void render::recreate_screen_texture()
 {
-	// vscreen->CreateTexture(options::Options.LinearFiltering ? "linear" : "nearest", SDL_TEXTUREACCESS_STREAMING);
-	vscreen->UpdateScaledIndexedBmp((float) 393 / 600, (float) 272 / 416);
+	vscreen->CreateTexture(options::Options.LinearFiltering ? "linear" : "nearest", SDL_TEXTUREACCESS_STREAMING);
 }
 
 void render::update()
