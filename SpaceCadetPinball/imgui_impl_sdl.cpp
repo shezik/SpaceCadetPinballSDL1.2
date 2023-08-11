@@ -487,11 +487,11 @@ void ImGui_ImplSDL2_NewFrame()
     //     io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
     io.DisplayFramebufferScale = ImVec2(1, 1);
 
-    // Setup time step
-    Uint64 current_time = SDL_GetTicks();
-    io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / 1000) : (float)(1.0f / 60.0f);
+    // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
+    static Uint64 frequency = SDL_GetPerformanceFrequency();
+    Uint64 current_time = SDL_GetPerformanceCounter();
+    io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / frequency) : (float)(1.0f / 60.0f);
     bd->Time = current_time;
-
     if (bd->PendingMouseLeaveFrame && bd->PendingMouseLeaveFrame >= ImGui::GetFrameCount() && bd->MouseButtonsDown == 0)
     {
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
