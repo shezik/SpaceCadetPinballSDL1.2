@@ -790,8 +790,8 @@ void winmain::RenderUi()
 	a_dialog();
 	high_score::RenderHighScoreDialog();
 	font_selection::RenderDialog();
-	// if (ShowSpriteViewer)
-	// 	render::SpriteViewer(&ShowSpriteViewer);
+	 if (ShowSpriteViewer)
+	 	render::SpriteViewer(&ShowSpriteViewer);
 	options::RenderControlDialog();
 	if (DispGRhistory)
 		RenderFrameTimeDialog();

@@ -302,11 +302,9 @@ void gdrv::ApplyPalette(gdrv_bitmap8& bmp)
 
 void gdrv::CreatePreview(gdrv_bitmap8& bmp)
 {
-	/*
 	if (bmp.Texture)
 		return;
 
 	bmp.CreateTexture("nearest", SDL_TEXTUREACCESS_STATIC);
 	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * sizeof(uint8_t));
-	*/
 }

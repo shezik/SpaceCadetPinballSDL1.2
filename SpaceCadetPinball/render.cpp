@@ -101,11 +101,8 @@ void render_sprite::ball_set(gdrv_bitmap8* bmp, float depth, int xPos, int yPos)
 
 void render::init(gdrv_bitmap8* bmp, int width, int height)
 {
-	printf("8\n");
 	vscreen = new gdrv_bitmap8(width, height);
-	printf("9\n");
 	zscreen = new zmap_header_type(width, height, width);
-	printf("10\n");
 	zdrv::fill(zscreen, zscreen->Width, zscreen->Height, 0, 0, 0xFFFF);
 	vscreen_rect.YPosition = 0;
 	vscreen_rect.XPosition = 0;
@@ -113,23 +110,16 @@ void render::init(gdrv_bitmap8* bmp, int width, int height)
 	vscreen_rect.Height = height;
 	vscreen->YPosition = 0;
 	vscreen->XPosition = 0;
-	printf("11\n");
 	for (auto& ballBmp : ball_bitmap)
 		ballBmp = new gdrv_bitmap8(64, 64);
 
-	printf("12\n");
 	background_bitmap = bmp;
-	if (bmp) {
-		printf("13\n");
+	if (bmp)
 		gdrv::copy_bitmap(vscreen, width, height, 0, 0, bmp, 0, 0);
-	} else {
-		printf("14\n");
+	else
 		gdrv::fill_bitmap(vscreen, vscreen->Width, vscreen->Height, 0, 0, 0);
-	}
 
-	printf("15\n");
 	recreate_screen_texture();
-	printf("16\n");
 }
 
 void render::uninit()
