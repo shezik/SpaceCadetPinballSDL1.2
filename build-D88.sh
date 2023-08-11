@@ -10,6 +10,8 @@ debug|Debug)
     type="Debug";;
 release|Release|*)
     type="Release";;
+DbgRelease|dbgrelease)
+    type="RelWithDebInfo";;
 esac
 
 gcc_path=$(which mipsel-linux-gcc)

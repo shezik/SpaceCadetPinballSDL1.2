@@ -10,6 +10,8 @@ debug|Debug)
     type="Debug";;
 release|Release|*)
     type="Release";;
+DbgRelease|dbgrelease)
+    type="RelWithDebInfo";;
 esac
 
 export SDL2DIR="/lib/x86_64-linux-gnu"  
