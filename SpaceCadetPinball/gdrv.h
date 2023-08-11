@@ -53,8 +53,8 @@ struct gdrv_bitmap8
 	void ScaleIndexed(float scaleX, float scaleY);
 	void CreateTexture(const char* scaleHint, int access);
 	void BlitToTexture();
-	char* IndexedBmpPtr;
-	char* BmpBufPtr1;
+	uint8_t* BmpBufPtr1;
+	uint8_t* IndexedBmpPtr;
 	int Width;
 	int Height;
 	int Stride;

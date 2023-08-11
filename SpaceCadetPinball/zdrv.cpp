@@ -10,7 +10,7 @@ zmap_header_type::zmap_header_type(int width, int height, int stride)
 	Height = height;
 	Stride = stride >= 0 ? stride : pad(width);
 	Texture = nullptr;
-	ZPtr1 = new unsigned short[Stride * Height];
+	ZPtr1 = new uint16_t[Stride * Height];
 }
 
 zmap_header_type::~zmap_header_type()
@@ -93,8 +93,6 @@ void zdrv::paint_flat(int width, int height, gdrv_bitmap8* dstBmp, int dstBmpXOf
 			if (gdrv::current_palette[*srcPtr].Color && *zPtr > depth)
 			{
 				*dstPtr = *srcPtr;
-			} else if (*zPtr > depth) {
-				printf("Ignored palette color %d at %d, SDL palette color at same pos: %X%X%X%X\n", gdrv::current_palette[*srcPtr].Color, *srcPtr, gdrv::current_palette_SDL[*srcPtr].r, gdrv::current_palette_SDL[*srcPtr].g, gdrv::current_palette_SDL[*srcPtr].b, gdrv::current_palette_SDL[*srcPtr].unused);
 			}
 			++srcPtr;
 			++dstPtr;

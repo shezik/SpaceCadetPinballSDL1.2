@@ -29,8 +29,8 @@ gdrv_bitmap8::gdrv_bitmap8(int width, int height)
 	YPosition = 0;
 	Resolution = 0;
 
-	IndexedBmpPtr = new char[Height * IndexedStride];
-	BmpBufPtr1 = new char[Height * Stride];
+	IndexedBmpPtr = new uint8_t[Height * IndexedStride];
+	BmpBufPtr1 = new uint8_t[Height * Stride];
 }
 
 gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
@@ -68,8 +68,8 @@ gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
 		assertm(sizeInBytes == header.Size, "Wrong bitmap8 size");
 	}
 
-	IndexedBmpPtr = new char[sizeInBytes];
-	BmpBufPtr1 = new char[Stride * Height];
+	IndexedBmpPtr = new uint8_t[sizeInBytes];
+	BmpBufPtr1 = new uint8_t[Stride * Height];
 }
 
 gdrv_bitmap8::~gdrv_bitmap8()
@@ -77,6 +77,8 @@ gdrv_bitmap8::~gdrv_bitmap8()
 	if (BitmapType != BitmapTypes::None) {  // !! Maybe we do not need this condition anymore
 		delete[] IndexedBmpPtr;
 		delete[] BmpBufPtr1;
+		if (Texture)
+			SDL_DestroyTexture(Texture);
 	}
 }
 
@@ -92,7 +94,7 @@ void gdrv_bitmap8::ScaleIndexed(float scaleX, float scaleY)
 	if (Width == newWidth && Height == newHeight)
 		return;
 
-	auto newIndBuf = new char[newHeight * newWidth];
+	auto newIndBuf = new uint8_t[newHeight * newWidth];
 	for (int dst = 0, y = 0; y < newHeight; y++)
 	{
 		for (int x = 0; x < newWidth; x++, dst++)
@@ -108,9 +110,8 @@ void gdrv_bitmap8::ScaleIndexed(float scaleX, float scaleY)
 
 	delete[] IndexedBmpPtr;
 	IndexedBmpPtr = newIndBuf;
-
 	delete[] BmpBufPtr1;
-	BmpBufPtr1 = new char[Stride * Height];
+	BmpBufPtr1 = new uint8_t[Stride * Height];
 }
 
 void gdrv_bitmap8::CreateTexture(const char* scaleHint, int access)
@@ -137,7 +138,7 @@ void gdrv_bitmap8::BlitToTexture()
 	assertm(Texture, "Updating null texture");
 
 	int pitch = 0;
-	char* lockedPixels;
+	uint8_t* lockedPixels;
 	auto result = SDL_LockTexture
 	(
 		Texture,
@@ -146,10 +147,10 @@ void gdrv_bitmap8::BlitToTexture()
 		&pitch
 	);
 	assertm(result == 0, "Updating non-streaming texture");
-	assertm(static_cast<unsigned>(pitch) == Width * sizeof(char), "Padding on vScreen texture");
+	assertm(static_cast<unsigned>(pitch) == Width * sizeof(uint8_t), "Padding on vScreen texture");
 
 	printf("Copying pixels...\n");
-	std::memcpy(lockedPixels, BmpBufPtr1, Width * Height * sizeof(char));
+	std::memcpy(lockedPixels, BmpBufPtr1, Width * Height * sizeof(uint8_t));
 	printf("done!\n");
 
 	SDL_UnlockTexture(Texture);
@@ -227,7 +228,7 @@ void gdrv::copy_bitmap(gdrv_bitmap8* dstBmp, int width, int height, int xOff, in
 
 	for (int y = height; y > 0; --y)
 	{
-		std::memcpy(dstPtr, srcPtr, width * sizeof(char));
+		std::memcpy(dstPtr, srcPtr, width * sizeof(uint8_t));
 		srcPtr += srcBmp->Stride;
 		dstPtr += dstBmp->Stride;
 	}
@@ -262,7 +263,7 @@ void gdrv::ScrollBitmapHorizontal(gdrv_bitmap8* bmp, int xStart)
 	auto length = bmp->Width - std::abs(xStart);
 	for (int y = bmp->Height; y > 0; --y)
 	{
-		std::memmove(srcPtr + endOffset, srcPtr + startOffset, length * sizeof(char));
+		std::memmove(srcPtr + endOffset, srcPtr + startOffset, length * sizeof(uint8_t));
 		srcPtr += bmp->Stride;
 	}
 }
@@ -285,6 +286,7 @@ void gdrv::ApplyPalette(gdrv_bitmap8& bmp)
 		return;
 	assertm(bmp.BitmapType != BitmapTypes::Spliced, "gdrv: wrong bitmap type");
 	assertm(bmp.IndexedBmpPtr != nullptr, "gdrv: non-indexed bitmap");
+
 	// Flip horizontally, this is important.
 	auto dst = bmp.BmpBufPtr1;
 	for (auto y = bmp.Height - 1; y >= 0; y--)
@@ -307,6 +309,6 @@ void gdrv::CreatePreview(gdrv_bitmap8& bmp)
 		return;
 
 	bmp.CreateTexture("nearest", SDL_TEXTUREACCESS_STATIC);
-	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * sizeof(char));
+	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * sizeof(uint8_t));
 	*/
 }
