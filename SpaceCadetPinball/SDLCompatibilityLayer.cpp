@@ -16,14 +16,14 @@
 /*Use (void) to silent unused warnings.*/
 #define assertm(exp, msg) assert(((void)msg, exp))
 
-// Code dependencies copied from SDL 1.2.15, please collapse this!
-#pragma region original_stuff
-
 #if 1
     #define DEFAULT_ALPHA_MODE (SDL_SRCALPHA | SDL_RLEACCEL)
 #else
     #define DEFAULT_ALPHA_MODE 0
 #endif
+
+// Code dependencies copied from SDL 1.2.15, please collapse this!
+#pragma region original_stuff
 
 typedef struct SDL_BlitMap {
 	SDL_Surface *dst;
@@ -968,12 +968,13 @@ int SDL_SetTextureColorMod(SDL_Texture *texture, Uint8 r, Uint8 g, Uint8 b) {
 // Quite unsafe.
 int SDL_SetPaletteColors(SDL_Palette *palette, const SDL_Color *colors, int firstcolor, int ncolors) {
     assertm(palette, "Palette not allocated");
-    printf("Copying palette...\n");
+    printf("Copying palette... ncolors of palette: %d, ncolors provided: %d\n", palette->ncolors, ncolors);
     if ( colors != (palette->colors + firstcolor) ) {
 		SDL_memcpy(palette->colors + firstcolor, colors,
 		       ncolors * sizeof(*colors));
 	}
     printf("done!\n");
+    return 0;
 }
 
 #define SDL_InvalidParamError(param)    SDL_SetError("Parameter '%s' is invalid", (param))

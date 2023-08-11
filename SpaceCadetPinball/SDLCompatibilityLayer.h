@@ -10,6 +10,7 @@ typedef int (SDLCALL * SDLCompat_SDL2EventFilter) (void *userdata, SDL_Event * e
 #define SDL_INIT_EVENTS 0
 #define SDL_INIT_GAMECONTROLLER 0
 // Don't. We don't have support for joysticks nor for controllers.
+#undef SDL_INIT_JOYSTICK
 #define SDL_INIT_JOYSTICK 0
 
 #define SDL_RENDERER_ACCELERATED 0
@@ -136,7 +137,7 @@ typedef enum
     > ...
 */
 
-inline char *SDL_GetClipboardText() {};
+inline char *SDL_GetClipboardText() { return ""; };
 inline int SDL_SetClipboardText(const char *) { return 0; };
 inline void SDL_SetMainReady() {};
 
