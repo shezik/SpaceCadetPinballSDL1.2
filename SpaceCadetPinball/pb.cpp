@@ -59,9 +59,7 @@ int pb::init()
 	if (!record_table)
 		return 1;
 
-	printf("4\n");
 	auto plt = (ColorRgba*)record_table->field_labeled("background", FieldTypes::Palette);
-	printf("5\n");
 	gdrv::display_palette(plt);
 
 	auto backgroundBmp = record_table->GetBitmap(record_table->record_labeled("background"));
@@ -84,9 +82,7 @@ int pb::init()
 		proj::init(projMat, projD, projCenterX, projCenterY, zMin, zScaler);
 	}
 
-	printf("6\n");
 	render::init(nullptr, resInfo->TableWidth, resInfo->TableHeight);
-	printf("7\n");
 	gdrv::copy_bitmap(
 		render::vscreen,
 		backgroundBmp->Width,
@@ -105,7 +101,6 @@ int pb::init()
 	timer::init(150);
 	score::init();
 
-	printf("8\n");
 	MainTable = new TPinballTable();
 
 	high_score::read();

@@ -149,9 +149,7 @@ void gdrv_bitmap8::BlitToTexture()
 	assertm(result == 0, "Updating non-streaming texture");
 	assertm(static_cast<unsigned>(pitch) == Width * sizeof(uint8_t), "Padding on vScreen texture");
 
-	printf("Copying pixels...\n");
 	std::memcpy(lockedPixels, BmpBufPtr1, Width * Height * sizeof(uint8_t));
-	printf("done!\n");
 
 	SDL_UnlockTexture(Texture);
 }
@@ -186,7 +184,7 @@ int gdrv::display_palette(ColorRgba* plt)
 
 	current_palette[255] = ColorRgba::White();
 
-	printf("Copying palette to SDL format...\n");
+	printf("Copying palette to SDL format... "); fflush(stdout);
 	for (int i = 0; i < 256; i++)
 		current_palette_SDL[i] = SDL_Color{current_palette[i].GetRed(), \
 											current_palette[i].GetGreen(), \

@@ -111,7 +111,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 
-	auto prefPath = SDL_GetPrefPath("", "SpaceCadetPinball");
+	auto prefPath = SDL_GetPrefPath(nullptr, "SpaceCadetPinball");
 	auto basePath = SDL_GetBasePath();
 
 	// SDL mixer init
@@ -208,7 +208,6 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		if (!midi::music_init(mixOpened, Options.MusicVolume))
 			Options.Music = false;
 
-		printf("1\n");
 		if (pb::init())
 		{
 			std::string message = "The .dat file is missing.\n"
@@ -224,7 +223,6 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 			return 1;
 		}
 
-		printf("2\n");
 		fullscrn::init();
 
 		pb::reset_table();
@@ -248,7 +246,6 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		else
 			pb::replay_level(false);
 
-		printf("3\n");
 		MainLoop();
 
 		options::uninit();
