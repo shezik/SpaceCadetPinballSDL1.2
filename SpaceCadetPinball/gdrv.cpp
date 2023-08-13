@@ -75,8 +75,8 @@ gdrv_bitmap8::gdrv_bitmap8(const dat8BitBmpHeader& header)
 gdrv_bitmap8::~gdrv_bitmap8()
 {
 	if (BitmapType != BitmapTypes::None) {  // !! Maybe we do not need this condition anymore
-		delete[] IndexedBmpPtr;
 		delete[] BmpBufPtr1;
+		delete[] IndexedBmpPtr;
 		if (Texture)
 			SDL_DestroyTexture(Texture);
 	}
