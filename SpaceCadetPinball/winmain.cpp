@@ -408,8 +408,9 @@ void winmain::MainLoop()
 			auto targetTimeDelta = TargetFrameTime - DurationMs(updateEnd - frameStart) - sleepRemainder;
 
 			TimePoint frameEnd;
-			if (targetTimeDelta > DurationMs::zero() && !Options.UncappedUpdatesPerSecond)
+			if (/*targetTimeDelta > DurationMs::zero() && !Options.UncappedUpdatesPerSecond*/ false)  // !!
 			{
+				printf("Sleeping for %d ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(targetTimeDelta));
 				if (Options.HybridSleep)
 					HybridSleep(targetTimeDelta);
 				else
@@ -1315,7 +1316,7 @@ void winmain::UpdateFrameRate()
 {
 	// UPS >= FPS
 	auto fps = Options.FramesPerSecond.V, ups = Options.UpdatesPerSecond.V;
-	UpdateToFrameRatio = static_cast<double>(ups) / fps;
+	UpdateToFrameRatio = static_cast<double>(ups) / fps * 1.7;  // !!
 	TargetFrameTime = DurationMs(1000.0 / ups);
 }
 
