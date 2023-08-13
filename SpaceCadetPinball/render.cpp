@@ -18,6 +18,7 @@ rectangle_type render::vscreen_rect;
 gdrv_bitmap8 *render::vscreen, *render::background_bitmap, *render::ball_bitmap[20];
 zmap_header_type* render::zscreen;
 SDL_Rect render::DestinationRect{};
+SDL_Surface* render::resizedVScreen = nullptr;
 
 render_sprite::render_sprite(VisualTypes visualType, gdrv_bitmap8* bmp, zmap_header_type* zMap,
 	int xPosition, int yPosition, rectangle_type* boundingRect)
@@ -452,14 +453,15 @@ void render::SpriteViewer(bool* show)
 	ImGui::End();
 }
 
-/*
 void render::PresentVScreen()
 {
-	vscreen->BlitToTexture();
+	// vscreen->BlitToTexture();
+	UpdateResizedVScreen();
 
 	if (offset_x == 0 && offset_y == 0)
 	{
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, &DestinationRect);
+		// SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, &DestinationRect);
+		SDL_BlitSurface(resizedVScreen, nullptr, winmain::Renderer->RenderTarget, &DestinationRect);
 	}
 	else
 	{
@@ -476,7 +478,7 @@ void render::PresentVScreen()
 			vscreen->Width - srcSeparationX, vscreen->Height
 		};
 
-#if SDL_VERSION_ATLEAST(2, 0, 10)
+#if /*SDL_VERSION_ATLEAST(2, 0, 10)*/ false
 		// SDL_RenderCopyF was added in 2.0.10
 		auto dstSeparationX = DestinationRect.w * tableWidthCoef;
 		auto dstBoardRect = SDL_FRect
@@ -514,9 +516,23 @@ void render::PresentVScreen()
 			DestinationRect.x + dstSeparationX, DestinationRect.y,
 			DestinationRect.w - dstSeparationX, DestinationRect.h
 		};
+		
+		// SDL_RenderCopy(winmain::Renderer, vscreen->Texture, &srcBoardRect, &dstBoardRect);
+		// SDL_RenderCopy(winmain::Renderer, vscreen->Texture, &srcSidebarRect, &dstSidebarRect);
 
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, &srcBoardRect, &dstBoardRect);
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, &srcSidebarRect, &dstSidebarRect);
+		int widthRatio = (DestinationRect.w << 16) / vscreen->Width;
+		int heightRatio = (DestinationRect.h << 16) / vscreen->Height;
+		auto srcBoardRectScaled = SDL_Rect {
+			(srcBoardRect.x * widthRatio) >> 16, (srcBoardRect.y * heightRatio) >> 16,
+			(srcBoardRect.w * widthRatio) >> 16, (srcBoardRect.h * heightRatio) >> 16
+		};
+		auto srcSidebarRectScaled = SDL_Rect {
+			(srcSidebarRect.x * widthRatio) >> 16, (srcSidebarRect.y * heightRatio) >> 16,
+			(srcSidebarRect.w * widthRatio) >> 16, (srcSidebarRect.h * heightRatio) >> 16
+		};
+
+		SDL_BlitSurface(resizedVScreen, &srcBoardRectScaled, winmain::Renderer->RenderTarget, &dstBoardRect);
+		SDL_BlitSurface(resizedVScreen, &srcSidebarRectScaled, winmain::Renderer->RenderTarget, &dstSidebarRect);
 #endif
 	}
 
@@ -525,50 +541,56 @@ void render::PresentVScreen()
 		DebugOverlay::DrawOverlay();
 	}
 }
-*/
 
-void render::PresentVScreen() {
-    static SDL_Surface *mid = nullptr;
-	static uint8_t **table = nullptr;
+void render::UpdateResizedVScreen() {
+	static uint8_t **projTable = nullptr;
 
-	SDL_Surface *const RenderTarget = winmain::Renderer->RenderTarget;
-	const int srcw = vscreen->Width, srch = vscreen->Height;
-	const int dstw = RenderTarget->w, dsth = RenderTarget->h;
+	static const int srcw = vscreen->Width, srch = vscreen->Height;
+	assertm(srcw == vscreen->Width && srch == vscreen->Height, "VScreen changed size! How?");
+	int dstw = DestinationRect.w, dsth = DestinationRect.h;
 
-    if (!mid || !table || mid->w != dstw || mid->h != dsth) {
-        printf("PresentVScreen: (Re)allocating temporary surface and mapping table\n");
-		if (mid)
-        	SDL_FreeSurface(mid);
-		if (table)
-			delete[] table;
+    if (!resizedVScreen || !projTable || resizedVScreen->w != dstw || resizedVScreen->h != dsth) {
+        printf("UpdateResizedVScreen: (Re)allocating temporary surface and mapping table\n");
+		if (resizedVScreen)
+        	SDL_FreeSurface(resizedVScreen);
+		if (projTable)
+			delete[] projTable;
 
-        mid = SDL_CreateTexture(winmain::Renderer, SDL_PIXELFORMAT_INDEX8, 0, dstw, dsth);
-        SDL_SetPaletteColors(mid->format->palette, gdrv::current_palette_SDL, 0, 256);
-		table = new uint8_t *[dstw * dsth] ();
+        resizedVScreen = SDL_CreateTexture(winmain::Renderer, SDL_PIXELFORMAT_INDEX8, 0, dstw, dsth);
+		assertm(resizedVScreen->w == dstw && resizedVScreen->h == dsth, "Surface dimension mismatch");
+        SDL_SetPaletteColors(resizedVScreen->format->palette, gdrv::current_palette_SDL, 0, 256);
+		projTable = new uint8_t *[dstw * dsth] ();
 
-		printf("PresentVScreen: Building mapping table\n");
-		int widthRatio = (srcw << 16) / mid->w;
-    	int heightRatio = (srch << 16) / mid->h;
+		printf("UpdateResizedVScreen: Building mapping table... "); fflush(stdout);
+		int widthRatio = (srcw << 16) / dstw;
+    	int heightRatio = (srch << 16) / dsth;
     	uint8_t *srcarr = (uint8_t *) vscreen->BmpBufPtr1;
-    	for (int y = 0; y < mid->h; y++) {
+    	for (int y = 0; y < dsth; y++) {
     	    int srcY = (y * heightRatio) >> 16;
-    	    for (int x = 0; x < mid->w; x++) {
+    	    for (int x = 0; x < dstw; x++) {
     	        int srcX = (x * widthRatio) >> 16;
     	        int srcIndex = srcY * srcw + srcX;
-    	        int dstIndex = y * mid->w + x;
-    	        table[dstIndex] = &srcarr[srcIndex];
+    	        int dstIndex = y * dstw + x;
+    	        projTable[dstIndex] = &srcarr[srcIndex];
     	    }
 		}
+		printf("done!\n");
     }
 
-    if (SDL_MUSTLOCK(mid))
-        SDL_LockSurface(mid);
+    if (SDL_MUSTLOCK(resizedVScreen))
+        SDL_LockSurface(resizedVScreen);
 
-    uint8_t *dstarr = (uint8_t *) mid->pixels;
-    for (int i = 0; i < dstw * dsth; i++)
-		dstarr[i] = *table[i];
+    uint8_t *dstarr = (uint8_t *) resizedVScreen->pixels;
+	uint8_t **_projTable = projTable;
+	const int margin = resizedVScreen->pitch - dstw;  // Pitch does not necessarily equal to width of surface even in 8 bpp mode...
+	assertm(margin >= 0, "How could margin be negative?");
 
-    if (SDL_MUSTLOCK(mid))
-        SDL_UnlockSurface(mid);
-    SDL_BlitSurface(mid, nullptr, RenderTarget, nullptr);
+	for (int y = 0; y < dsth; y++) {
+    	for (int x = 0; x < dstw; x++)
+    	    *(dstarr++) = **(_projTable++);
+		dstarr += margin;
+	}
+
+    if (SDL_MUSTLOCK(resizedVScreen))
+        SDL_UnlockSurface(resizedVScreen);
 }

@@ -59,8 +59,10 @@ private:
 	static rectangle_type vscreen_rect;
 	static gdrv_bitmap8* ball_bitmap[20];
 	static zmap_header_type* zscreen;
+	static SDL_Surface* resizedVScreen;
 
 	static void repaint(const render_sprite& sprite);
 	static void paint_balls();
 	static void unpaint_balls();
+	static void UpdateResizedVScreen();
 };
