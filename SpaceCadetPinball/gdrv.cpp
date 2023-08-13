@@ -136,7 +136,7 @@ void gdrv_bitmap8::CreateTexture(const char* scaleHint, int access)
 	Texture = SDL_CreateTexture
 	(
 		winmain::Renderer,
-		SDL_PIXELFORMAT_BGRA32,
+		SDL_PIXELFORMAT_ARGB4444,
 		access,
 		Width, Height
 	);
@@ -163,7 +163,7 @@ void gdrv_bitmap8::BlitToTexture()
 	SDL_UnlockTexture(Texture);
 }
 
-int gdrv::display_palette(ColorRgba* plt)
+int gdrv::display_palette(ColorRgba32* plt)
 {
 	// Colors from Windows system palette
 	const ColorRgba sysPaletteColors[10]
@@ -187,7 +187,7 @@ int gdrv::display_palette(ColorRgba* plt)
 	{
 		auto srcClr = plt[index];
 		srcClr.SetAlpha(0xff);		
-		current_palette[index] = ColorRgba{ srcClr };
+		current_palette[index] = ColorRgba{ srcClr.GetRed(), srcClr.GetGreen(), srcClr.GetBlue(), srcClr.GetAlpha() };
 		current_palette[index].SetAlpha(2);
 	}
 

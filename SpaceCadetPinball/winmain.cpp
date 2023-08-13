@@ -909,7 +909,7 @@ int winmain::event_handler(const SDL_Event* event)
 			break;
 		case SDLK_o:
 			{
-				auto plt = new ColorRgba[4 * 256];
+				auto plt = new ColorRgba32[4 * 256];
 				auto pltPtr = &plt[10]; // first 10 entries are system colors hardcoded in display_palette()
 				for (int i1 = 0, i2 = 0; i1 < 256 - 10; ++i1, i2 += 8)
 				{
@@ -920,7 +920,7 @@ int winmain::event_handler(const SDL_Event* event)
 						redGreen = i1;
 					}
 
-					*pltPtr++ = ColorRgba{blue, redGreen, redGreen, 0};
+					*pltPtr++ = ColorRgba32{blue, redGreen, redGreen, 0};
 				}
 				gdrv::display_palette(plt);
 				delete[] plt;

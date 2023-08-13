@@ -8,28 +8,23 @@ enum class BitmapTypes : uint8_t
 	Spliced = 3,
 };
 
-struct ColorRgba
+struct ColorRgba32
 {
-	static constexpr ColorRgba Black() { return ColorRgba{ 0, 0, 0, 255 }; }
-	static constexpr ColorRgba White() { return ColorRgba{ 255, 255, 255, 255 }; }
-	static constexpr ColorRgba Red() { return ColorRgba{ 255, 0, 0, 255 }; }
-	static constexpr ColorRgba Green() { return ColorRgba{ 0, 255,0, 255 }; }
-	static constexpr ColorRgba Blue() { return ColorRgba{ 0, 0, 255, 255 }; }
-
+	static constexpr ColorRgba32 Black() { return ColorRgba32{ 0, 0, 0, 255 }; }
+	static constexpr ColorRgba32 White() { return ColorRgba32{ 255, 255, 255, 255 }; }
+	static constexpr ColorRgba32 Red() { return ColorRgba32{ 255, 0, 0, 255 }; }
+	static constexpr ColorRgba32 Green() { return ColorRgba32{ 0, 255,0, 255 }; }
+	static constexpr ColorRgba32 Blue() { return ColorRgba32{ 0, 0, 255, 255 }; }
 	uint32_t Color;
-
-	ColorRgba() = default;
-
-	explicit constexpr ColorRgba(uint32_t color)
+	ColorRgba32() = default;
+	explicit constexpr ColorRgba32(uint32_t color)
 		: Color(color)
 	{
 	}
-
-	explicit constexpr ColorRgba(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+	explicit constexpr ColorRgba32(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
 		: Color(alpha << alphaOffset | red << redOffset | green << greenOffset | blue << blueOffset)
 	{
 	}
-
 	uint8_t GetAlpha() const { return (Color >> alphaOffset) & 0xffu; }
 	uint8_t GetRed() const { return (Color >> redOffset) & 0xffu; }
 	uint8_t GetGreen() const { return (Color >> greenOffset) & 0xffu; }
@@ -38,12 +33,47 @@ struct ColorRgba
 	void SetRed(uint8_t val) { Color = (Color & (~(0xffu << redOffset))) | (val << redOffset); }
 	void SetGreen(uint8_t val) { Color = (Color & (~(0xffu << greenOffset))) | (val << greenOffset); }
 	void SetBlue(uint8_t val) { Color = (Color & (~(0xffu << blueOffset))) | (val << blueOffset); }
-
 private:
 	static const unsigned alphaOffset = 3 * 8, redOffset = 2 * 8, greenOffset = 1 * 8, blueOffset = 0 * 8;
 };
 
-static_assert(sizeof(ColorRgba) == 4, "Wrong size of RGBA color");
+struct ColorRgba
+{
+	static constexpr ColorRgba Black() { return ColorRgba{ 0, 0, 0, 255 }; }
+	static constexpr ColorRgba White() { return ColorRgba{ 255, 255, 255, 255 }; }
+	static constexpr ColorRgba Red() { return ColorRgba{ 255, 0, 0, 255 }; }
+	static constexpr ColorRgba Green() { return ColorRgba{ 0, 255,0, 255 }; }
+	static constexpr ColorRgba Blue() { return ColorRgba{ 0, 0, 255, 255 }; }
+
+	uint16_t Color;
+
+	ColorRgba() = default;
+
+	explicit constexpr ColorRgba(uint16_t color)
+		: Color(color)
+	{
+	}
+
+	explicit constexpr ColorRgba(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+		: Color(alpha >> alphaLoss << alphaOffset | red >> redLoss << redOffset | green >> greenLoss << greenOffset | blue >> blueLoss << blueOffset)
+	{
+	}
+
+	uint8_t GetAlpha() const { return ((Color >> alphaOffset) & 0x0fu) << alphaLoss; }
+	uint8_t GetRed() const { return ((Color >> redOffset) & 0x0fu) << redLoss; }
+	uint8_t GetGreen() const { return ((Color >> greenOffset) & 0x0fu) << greenLoss; }
+	uint8_t GetBlue() const { return ((Color >> blueOffset) & 0x0fu) << blueLoss; }
+	void SetAlpha(uint8_t val) { Color = (Color & (~(0x0fu << alphaOffset))) | (val >> alphaLoss << alphaOffset); }
+	void SetRed(uint8_t val) { Color = (Color & (~(0x0fu << redOffset))) | (val >> redLoss << redOffset); }
+	void SetGreen(uint8_t val) { Color = (Color & (~(0x0fu << greenOffset))) | (val >> greenLoss << greenOffset); }
+	void SetBlue(uint8_t val) { Color = (Color & (~(0x0fu << blueOffset))) | (val >> blueLoss << blueOffset); }
+
+private:
+	static const unsigned alphaOffset = 3 * 4, redOffset = 2 * 4, greenOffset = 1 * 4, blueOffset = 0 * 4;
+	static const unsigned alphaLoss = 4, redLoss = 4, greenLoss = 4, blueLoss = 4;
+};
+
+static_assert(sizeof(ColorRgba) == 2, "Wrong size of RGBA color");
 
 struct gdrv_bitmap8
 {
@@ -72,7 +102,7 @@ struct gdrv_bitmap8
 class gdrv
 {
 public:
-	static int display_palette(ColorRgba* plt);
+	static int display_palette(ColorRgba32* plt);
 	static void fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, uint8_t fillChar);
 	static void fill_bitmap(gdrv_bitmap8* bmp, int width, int height, int xOff, int yOff, ColorRgba fillColor);
 	static void copy_bitmap(gdrv_bitmap8* dstBmp, int width, int height, int xOff, int yOff, gdrv_bitmap8* srcBmp,

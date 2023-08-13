@@ -634,6 +634,12 @@ static int SDLCompat_ParsePixelFormat(SDLCompat_PixelFormatEnum fmt, int *bpp, U
                 _Bmask = 0x000000ff;
                 break;
         }
+    } else if (fmt == SDL_PIXELFORMAT_ARGB4444) {
+        _bpp = 16; 
+        _Amask = 0xf000;
+        _Rmask = 0x0f00;
+        _Gmask = 0x00f0;
+        _Bmask = 0x000f;
     } else if (fmt == SDL_PIXELFORMAT_INDEX8) {
         _bpp = 8;
         _Rmask = _Gmask = _Bmask = _Amask = 0;

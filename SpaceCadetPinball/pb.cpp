@@ -59,7 +59,7 @@ int pb::init()
 	if (!record_table)
 		return 1;
 
-	auto plt = (ColorRgba*)record_table->field_labeled("background", FieldTypes::Palette);
+	auto plt = (ColorRgba32*)record_table->field_labeled("background", FieldTypes::Palette);
 	gdrv::display_palette(plt);
 
 	auto backgroundBmp = record_table->GetBitmap(record_table->record_labeled("background"));

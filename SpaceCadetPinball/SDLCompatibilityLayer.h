@@ -205,6 +205,8 @@ typedef enum {
     SDL_PIXELFORMAT_BGRA8888,
     SDL_PIXELFORMAT_ARGB8888,
 
+    SDL_PIXELFORMAT_ARGB4444,
+
     SDL_PIXELFORMAT_INDEX8,
 
 // ____32 formats' memory layout is exactly as its name and platform-independent,
