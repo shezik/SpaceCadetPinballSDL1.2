@@ -458,7 +458,7 @@ void render::PresentVScreen()
 
 	if (offset_x == 0 && offset_y == 0)
 	{
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, &DestinationRect);
+		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, /*&DestinationRect*/nullptr);
 	}
 	else
 	{

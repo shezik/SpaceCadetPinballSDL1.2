@@ -855,7 +855,7 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
 
     // Speed things up in certain circumstances
     if (!angle && !flip) {
-        if (srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
+        if (/*srcrect->w == dstrect->w && srcrect->h == dstrect->h*/true) {
             // Much simpler.
             // printf(", simply calling SDL_BlitSurface\n");
             rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
