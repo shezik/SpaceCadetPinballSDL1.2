@@ -675,7 +675,7 @@ static int SDLCompat_ConvertSurfaceFormat(SDL_Surface *surface, SDLCompat_PixelF
     return rtn;
 }
 
-SDL_Texture *SDL_CreateTexture(SDL_Renderer *renderer, Uint32 format, int access, int w, int h) {
+SDL_Texture *SDL_CreateTexture(SDL_Renderer *, Uint32 format, int, int w, int h) {
     int bpp;
     Uint32 Rmask, Gmask, Bmask, Amask;
     SDL_Texture *newTexture = nullptr;
@@ -836,34 +836,81 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
     int rtn = 0;
     rtn = !rtn ? SDLCompat_UpdateClipSource(renderer) : rtn;
 
-    SDL_Surface *src, *mid;
-    double zoomx, zoomy;
-    SDL_Rect srcrectLocal, dstrectLocal, *srcrect, *dstrect;
     SDL_Rect srcrectFull = {0, 0, texture->w, texture->h};
     SDL_Rect dstrectFull = {0, 0, renderer->ClipSource->w, renderer->ClipSource->h};
+    SDL_Rect srcrectLocal = _srcrect ? *_srcrect : srcrectFull;
+    SDL_Rect dstrectLocal = _dstrect ? *_dstrect : dstrectFull;
+    SDL_Rect *srcrect = &srcrectLocal;
+    SDL_Rect *dstrect = &dstrectLocal;
 
-    srcrectLocal = _srcrect ? *_srcrect : srcrectFull;
-    dstrectLocal = _dstrect ? *_dstrect : dstrectFull;
-    srcrect = &srcrectLocal;
-    dstrect = &dstrectLocal;
+    // *INSERT CLIPPING OPTIMIZATION HERE*
 
-    printf("SDL_RenderCopyEx called! srcrect: %d x %d, dstrect: %d x %d, angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, dstrect->w, dstrect->h, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
+    // printf("SDL_RenderCopyEx called! srcrect: %d x %d at (%d, %d), dstrect: %d x %d at (%d, %d), angle: %f, flip: %d, clipping: %d, clipping rect: %d x %d at (%d, %d)", srcrect->w, srcrect->h, srcrect->x, srcrect->y, dstrect->w, dstrect->h, dstrect->x, dstrect->y, angle, flip, renderer->ClipEnabled, renderer->ClipRect.w, renderer->ClipRect.h, renderer->ClipRect.x, renderer->ClipRect.y);
 
-    if (/*!angle && !flip && srcrect->w == dstrect->w && srcrect->h == dstrect->h*/true) {
-        // Much simpler.
-        printf(", taking shortcut\n");
-        rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
-        goto end;
+    // Speed things up in certain circumstances
+    if (!angle && !flip) {
+        if (srcrect->w == dstrect->w && srcrect->h == dstrect->h) {
+            // Much simpler.
+            // printf(", simply calling SDL_BlitSurface\n");
+            rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
+            goto end;
+        } else if (!renderer->ClipEnabled && texture->format->BitsPerPixel == 8 && renderer->RenderTarget->w <= texture->w && renderer->RenderTarget->h <= texture->h) {
+            // Custom indexed image shrinker for embedded systems
+            // printf(", no clipping, src is 8 bpp indexed, zooming out\n");
+            
+            static SDL_Surface *mid = nullptr;
+            if (!mid || mid->w != renderer->RenderTarget->w || mid->h != renderer->RenderTarget->h) {
+                if (mid) {
+                    printf("RenderCopyEx: Reallocating temporary surface\n");
+                    SDL_FreeSurface(mid);
+                    mid = nullptr;
+                }
+                mid = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_INDEX8, 0, renderer->RenderTarget->w, renderer->RenderTarget->h);
+                SDL_SetPaletteColors(mid->format->palette, texture->format->palette->colors, 0, 256);
+            }
+
+            if (SDL_MUSTLOCK(texture))
+                SDL_LockSurface(texture);
+            if (SDL_MUSTLOCK(mid))
+                SDL_LockSurface(mid);
+
+            int widthRatio = (texture->w << 16) / mid->w;
+            int heightRatio = (texture->h << 16) / mid->h;
+            uint8_t *srcarr = (uint8_t *) texture->pixels;
+            uint8_t *dstarr = (uint8_t *) mid->pixels;
+
+            for (int y = 0; y < mid->h; y++)
+                for (int x = 0; x < mid->w; x++) {
+                    int srcX = (x * widthRatio) >> 16;
+                    int srcY = (y * heightRatio) >> 16;
+                    int srcIndex = srcY * texture->w + srcX;
+                    int dstIndex = y * mid->w + x;
+                    dstarr[dstIndex] = srcarr[srcIndex];
+                }
+
+            if (SDL_MUSTLOCK(texture))
+                SDL_UnlockSurface(texture);
+            if (SDL_MUSTLOCK(mid))
+                SDL_UnlockSurface(mid);
+
+            SDL_BlitSurface(mid, nullptr, renderer->RenderTarget, nullptr);
+            goto end;
+        }
     }
-    printf("\n");
+
+    // printf("\n");
     
+    // Otherwise use this slower method
+    SDL_Surface *src, *mid;
+    double zoomx, zoomy;
+
     assertm(srcrect->w && srcrect->h, "Divide by zero caused by srcrect");
     zoomx = (double) dstrect->w / srcrect->w; zoomy = (double) dstrect->h / srcrect->h;
     if (flip & SDL_FLIP_HORIZONTAL)
         zoomx = -zoomx;
     if (flip & SDL_FLIP_VERTICAL)
         zoomy = -zoomy;
-    printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
+    // printf("zoomx: %f, zoomy: %f\n", zoomx, zoomy);
 
     if (angle) {
         if (!rtn) {
@@ -874,22 +921,18 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
         rtn = !rtn ? SDL_BlitSurface(texture, (SDL_Rect *) srcrect, src, nullptr) : rtn;
         srcrect = nullptr;
     } else {
-        // No rotation required, try to speed up a bit
+        // No rotation required, try to speed up a bit. I'm afraid this is actually slower for large surfaces.
         src = texture;
         SDL_Rect srcrectNew;
         srcrectNew.w = srcrect->w * abs(zoomx) + 0.5;
         srcrectNew.h = srcrect->h * abs(zoomy) + 0.5;
-        srcrectNew.x = zoomx > 0 ? (srcrect->x * zoomx + 0.5) : ((srcrectNew.w - 1) - (srcrect->x * -zoomx) + 0.5);
-        srcrectNew.y = zoomy > 0 ? (srcrect->y * zoomy + 0.5) : ((srcrectNew.h - 1) - (srcrect->y * -zoomy) + 0.5);
+        srcrectNew.x = zoomx > 0 ? (srcrect->x * zoomx + 0.5) : ((srcrectNew.w - 1) + (srcrect->x * zoomx) + 0.5);
+        srcrectNew.y = zoomy > 0 ? (srcrect->y * zoomy + 0.5) : ((srcrectNew.h - 1) + (srcrect->y * zoomy) + 0.5);
         srcrectLocal = srcrectNew;
     }
 
     if (!rtn) {
-        if (angle) {
-            mid = rotozoomSurfaceXY(src, angle, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
-        } else {
-            mid = zoomSurface(src, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());
-        }
+        mid = rotozoomSurfaceXY(src, angle, zoomx, zoomy, SDLCompat_GetRotozoomSmoothFlag());  // Fun fact: Potential memory leak of rz_src in SDL_gfx-2.0.23
         rtn = -!mid;
         SDL_SetAlpha(mid, 0, SDL_ALPHA_OPAQUE);  // weird
     }
@@ -897,7 +940,7 @@ int SDL_RenderCopyEx(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rec
     if (src != texture) {
         SDL_FreeSurface(src); src = nullptr;
     }
-    printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
+    // printf("mid: %d x %d, ClipSource: %d x %d\n", mid->w, mid->h, renderer->ClipSource->w, renderer->ClipSource->h);
     rtn = !rtn ? SDL_BlitSurface(mid, srcrect, renderer->ClipSource, (SDL_Rect *) dstrect) : rtn;
     SDL_FreeSurface(mid); mid = nullptr;
 
@@ -968,13 +1011,24 @@ int SDL_SetTextureColorMod(SDL_Texture *texture, Uint8 r, Uint8 g, Uint8 b) {
 // Quite unsafe.
 int SDL_SetPaletteColors(SDL_Palette *palette, const SDL_Color *colors, int firstcolor, int ncolors) {
     assertm(palette, "Palette not allocated");
-    printf("Copying palette... ncolors of palette: %d, ncolors provided: %d\n", palette->ncolors, ncolors);
-    if ( colors != (palette->colors + firstcolor) ) {
-		SDL_memcpy(palette->colors + firstcolor, colors,
-		       ncolors * sizeof(*colors));
-	}
-    printf("done!\n");
-    return 0;
+
+    int status = 0;
+
+    /* Verify the parameters */
+    if (palette == NULL) {
+        return -1;
+    }
+    if (ncolors > (palette->ncolors - firstcolor)) {
+        ncolors = (palette->ncolors - firstcolor);
+        status = -1;
+    }
+
+    if (colors != (palette->colors + firstcolor)) {
+        SDL_memcpy(palette->colors + firstcolor, colors,
+                   ncolors * sizeof(*colors));
+    }
+
+    return status;
 }
 
 #define SDL_InvalidParamError(param)    SDL_SetError("Parameter '%s' is invalid", (param))

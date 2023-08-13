@@ -26,3 +26,5 @@ Get over the `rtn = !rtn ? do_something() : rtn;` stuff.
 
 DebugOverlay::dbScreen might not work due to the fact that right now all bitmaps are indexed.
 Refactor SDLCompatibilityLayer. This should be imminent.
+
+Add padding feature to custom indexed image shrinker.

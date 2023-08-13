@@ -452,13 +452,14 @@ void render::SpriteViewer(bool* show)
 	ImGui::End();
 }
 
+/*
 void render::PresentVScreen()
 {
 	vscreen->BlitToTexture();
 
 	if (offset_x == 0 && offset_y == 0)
 	{
-		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, /*&DestinationRect*/ nullptr);
+		SDL_RenderCopy(winmain::Renderer, vscreen->Texture, nullptr, &DestinationRect);
 	}
 	else
 	{
@@ -523,4 +524,51 @@ void render::PresentVScreen()
 	{
 		DebugOverlay::DrawOverlay();
 	}
+}
+*/
+
+void render::PresentVScreen() {
+    static SDL_Surface *mid = nullptr;
+	static uint8_t **table = nullptr;
+
+	SDL_Surface *const RenderTarget = winmain::Renderer->RenderTarget;
+	const int srcw = vscreen->Width, srch = vscreen->Height;
+	const int dstw = RenderTarget->w, dsth = RenderTarget->h;
+
+    if (!mid || !table || mid->w != dstw || mid->h != dsth) {
+        printf("PresentVScreen: (Re)allocating temporary surface and mapping table\n");
+		if (mid)
+        	SDL_FreeSurface(mid);
+		if (table)
+			delete[] table;
+
+        mid = SDL_CreateTexture(winmain::Renderer, SDL_PIXELFORMAT_INDEX8, 0, dstw, dsth);
+        SDL_SetPaletteColors(mid->format->palette, gdrv::current_palette_SDL, 0, 256);
+		table = new uint8_t *[dstw * dsth] ();
+
+		printf("PresentVScreen: Building mapping table\n");
+		int widthRatio = (srcw << 16) / mid->w;
+    	int heightRatio = (srch << 16) / mid->h;
+    	uint8_t *srcarr = (uint8_t *) vscreen->BmpBufPtr1;
+    	for (int y = 0; y < mid->h; y++) {
+    	    int srcY = (y * heightRatio) >> 16;
+    	    for (int x = 0; x < mid->w; x++) {
+    	        int srcX = (x * widthRatio) >> 16;
+    	        int srcIndex = srcY * srcw + srcX;
+    	        int dstIndex = y * mid->w + x;
+    	        table[dstIndex] = &srcarr[srcIndex];
+    	    }
+		}
+    }
+
+    if (SDL_MUSTLOCK(mid))
+        SDL_LockSurface(mid);
+
+    uint8_t *dstarr = (uint8_t *) mid->pixels;
+    for (int i = 0; i < dstw * dsth; i++)
+		dstarr[i] = *table[i];
+
+    if (SDL_MUSTLOCK(mid))
+        SDL_UnlockSurface(mid);
+    SDL_BlitSurface(mid, nullptr, RenderTarget, nullptr);
 }
