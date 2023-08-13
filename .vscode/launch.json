@@ -103,6 +103,21 @@
                 }
             ],
             "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Clean",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "",
+            "setupCommands": [],
+            "preLaunchTask": "build-native-clean",
+            "miDebuggerPath": ""
         }
     ]
 }
