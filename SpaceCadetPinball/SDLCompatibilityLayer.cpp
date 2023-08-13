@@ -411,7 +411,7 @@ SDL_Renderer *SDL_CreateRenderer(SDL_Window *window, int, Uint32) {
 }
 
 int SDL_GetRendererInfo(SDL_Renderer *, SDL_RendererInfo *info) {
-    static const char name[] = "SDLegacy Alpha";
+    static const char name[] = "SDLCompatibilityLayer Alpha";
     info->name = name;
     return 0;
 }
