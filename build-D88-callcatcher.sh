@@ -16,5 +16,5 @@ esac
 
 gcc_path=$(which mipsel-linux-gcc)
 export SDL2DIR="${gcc_path}/../../mipsel-buildroot-linux-uclibc/sysroot/usr/lib"  
-cmake -D CMAKE_C_COMPILER=mipsel-linux-gcc -D CMAKE_CXX_COMPILER=mipsel-linux-g++ -D CMAKE_C_COMPILER_LAUNCHER="" -D CMAKE_CXX_COMPILER_LAUNCHER="" -D CMAKE_C_LINKER_LAUNCHER="" -D CMAKE_CXX_LINKER_LAUNCHER="" -D SDL2DIR=${SDL2DIR} -D CMAKE_BUILD_TYPE=${type} .
+cmake -D CMAKE_C_COMPILER=mipsel-linux-gcc -D CMAKE_CXX_COMPILER=mipsel-linux-g++ -D CMAKE_C_COMPILER_LAUNCHER=callcatcher -D CMAKE_CXX_COMPILER_LAUNCHER=callcatcher -D CMAKE_C_LINKER_LAUNCHER=callcatcher -D CMAKE_CXX_LINKER_LAUNCHER=callcatcher -D SDL2DIR=${SDL2DIR} -D CMAKE_BUILD_TYPE=${type} .
 make -j12

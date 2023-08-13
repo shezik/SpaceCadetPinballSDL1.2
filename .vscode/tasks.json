@@ -1,0 +1,61 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "build-native-debug",
+            "command": "./build-native.sh",
+            "args": ["debug"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": ""
+        },
+        {
+            "type": "cppbuild",
+            "label": "build-native-release",
+            "command": "./build-native.sh",
+            "args": ["release"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": ""
+        },
+        {
+            "type": "cppbuild",
+            "label": "build-native-dbgrelease",
+            "command": "./build-native.sh",
+            "args": ["dbgrelease"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": ""
+        },
+        {
+            "type": "cppbuild",
+            "label": "build-native-clean",
+            "command": "./build-native.sh",
+            "args": ["clean"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": ""
+        }
+    ],
+    "version": "2.0.0"
+}

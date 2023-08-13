@@ -10,7 +10,7 @@ zmap_header_type::zmap_header_type(int width, int height, int stride)
 	Height = height;
 	Stride = stride >= 0 ? stride : pad(width);
 	Texture = nullptr;
-	ZPtr1 = new unsigned short[Stride * Height];
+	ZPtr1 = new uint16_t[Stride * Height];
 }
 
 zmap_header_type::~zmap_header_type()

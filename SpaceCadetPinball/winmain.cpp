@@ -111,7 +111,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 
-	auto prefPath = SDL_GetPrefPath("", "SpaceCadetPinball");
+	auto prefPath = SDL_GetPrefPath(nullptr, "SpaceCadetPinball");
 	auto basePath = SDL_GetBasePath();
 
 	// SDL mixer init

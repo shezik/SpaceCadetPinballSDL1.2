@@ -101,14 +101,14 @@ void gdrv_bitmap8::ScaleIndexed(float scaleX, float scaleY)
 		return;
 	}
 
-	int newWidht = static_cast<int>(Width * scaleX), newHeight = static_cast<int>(Height * scaleY);
-	if (Width == newWidht && Height == newHeight)
+	int newWidth = static_cast<int>(Width * scaleX), newHeight = static_cast<int>(Height * scaleY);
+	if (Width == newWidth && Height == newHeight)
 		return;
 
-	auto newIndBuf = new char[newHeight * newWidht];
+	auto newIndBuf = new char[newHeight * newWidth];
 	for (int dst = 0, y = 0; y < newHeight; y++)
 	{
-		for (int x = 0; x < newWidht; x++, dst++)
+		for (int x = 0; x < newWidth; x++, dst++)
 		{
 			auto px = static_cast<int>(x / scaleX);
 			auto py = static_cast<int>(y / scaleY);
@@ -116,12 +116,12 @@ void gdrv_bitmap8::ScaleIndexed(float scaleX, float scaleY)
 		}
 	}
 
-	Stride = IndexedStride = Width = newWidht;
+	Stride = IndexedStride = Width = newWidth;
 	Height = newHeight;
 
-	delete IndexedBmpPtr;
+	delete[] IndexedBmpPtr;
 	IndexedBmpPtr = newIndBuf;
-	delete BmpBufPtr1;
+	delete[] BmpBufPtr1;
 	BmpBufPtr1 = new ColorRgba[Stride * Height];
 }
 
@@ -309,5 +309,5 @@ void gdrv::CreatePreview(gdrv_bitmap8& bmp)
 		return;
 
 	bmp.CreateTexture("nearest", SDL_TEXTUREACCESS_STATIC);
-	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * 4);
+	SDL_UpdateTexture(bmp.Texture, nullptr, bmp.BmpBufPtr1, bmp.Width * sizeof(ColorRgba));
 }
