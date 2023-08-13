@@ -31,7 +31,7 @@ optionsStruct options::Options
 		{
 			"Right Flipper key",
 			Msg::KEYMAPPER_FlipperR,
-			{InputTypes::Keyboard, SDLK_SLASH},
+			{InputTypes::Keyboard, /*SDLK_SLASH*/ SDLK_UP},
 			{InputTypes::Mouse,SDL_BUTTON_RIGHT},
 			{InputTypes::GameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER}
 		},
@@ -52,63 +52,63 @@ optionsStruct options::Options
 		{
 			"Right Table Bump key",
 			Msg::KEYMAPPER_BumpRight,
-			{InputTypes::Keyboard, SDLK_PERIOD},
+			{InputTypes::Keyboard, /*SDLK_PERIOD*/ SDLK_SEMICOLON},
 			{InputTypes::Mouse,SDL_BUTTON_X2},
 			{InputTypes::GameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT}
 		},
 		{
 			"Bottom Table Bump key",
 			Msg::KEYMAPPER_BumpBottom,
-			{InputTypes::Keyboard, SDLK_UP},
+			{InputTypes::Keyboard, /*SDLK_UP*/ SDLK_l},
 			{InputTypes::Mouse,SDL_BUTTON_X2 + 1},
 			{InputTypes::GameController, SDL_CONTROLLER_BUTTON_DPAD_UP}
 		},
 		{
 			"New Game",
 			Msg::Menu1_New_Game,
-			{InputTypes::Keyboard, SDLK_F2},
+			{InputTypes::Keyboard, /*SDLK_F2*/ SDLK_2},
 			{},
 			{}
 		},
 		{
 			"Toggle Pause",
 			Msg::Menu1_Pause_Resume_Game,
-			{InputTypes::Keyboard, SDLK_F3},
+			{InputTypes::Keyboard, /*SDLK_F3*/ SDLK_3},
 			{},
 			{InputTypes::GameController, SDL_CONTROLLER_BUTTON_START}
 		},
 		{
 			"Toggle FullScreen",
 			Msg::Menu1_Full_Screen,
-			{InputTypes::Keyboard, SDLK_F4},
+			{InputTypes::Keyboard, /*SDLK_F4*/ SDLK_4},
 			{},
 			{}
 		},
 		{
 			"Toggle Sounds",
 			Msg::Menu1_Sounds,
-			{InputTypes::Keyboard, SDLK_F5},
+			{InputTypes::Keyboard, /*SDLK_F5*/ SDLK_5},
 			{},
 			{}
 		},
 		{
 			"Toggle Music",
 			Msg::Menu1_Music,
-			{InputTypes::Keyboard, SDLK_F6},
+			{InputTypes::Keyboard, /*SDLK_F6*/ SDLK_6},
 			{},
 			{}
 		},
 		{
 			"Show Control Dialog",
 			Msg::Menu1_Player_Controls,
-			{InputTypes::Keyboard, SDLK_F8},
+			{InputTypes::Keyboard, /*SDLK_F8*/ SDLK_8},
 			{},
 			{}
 		},
 		{
 			"Toggle Menu Display",
 			Msg::Menu1_ToggleShowMenu,
-			{InputTypes::Keyboard, SDLK_F9},
+			{InputTypes::Keyboard, /*SDLK_F9*/ SDLK_9},
 			{},
 			{}
 		},

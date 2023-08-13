@@ -930,10 +930,10 @@ int winmain::event_handler(const SDL_Event* event)
 			SDL_SetWindowTitle(MainWindow, "Pinball");
 			DispFrameRate ^= true;
 			break;
-		case SDLK_F1:
+		case /*SDLK_F1*/ SDLK_1:
 			pb::frame(10);
 			break;
-		case SDLK_F10:
+		case /*SDLK_F10*/ SDLK_0:
 			single_step ^= true;
 			if (!single_step)
 				no_time_loss = true;

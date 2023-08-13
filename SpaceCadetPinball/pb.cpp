@@ -572,7 +572,7 @@ void pb::InputDown(GameInput input)
 	const auto bindings = options::MapGameInput(input);
 	for (const auto binding : bindings)
 	{
-		winmain::HandleGameBinding(binding, true);
+		winmain::HandleGameBinding(binding, /*true*/ false);  // !! Because we don't have a fast GUI yet
 	}
 
 	if (game_mode != GameModes::InGame || winmain::single_step || demo_mode)
@@ -639,7 +639,7 @@ void pb::InputDown(GameInput input)
 		case 's':
 			MainTable->AddScore(static_cast<int>(RandFloat() * 1000000.0f));
 			break;
-		case SDLK_F12:
+		case /*SDLK_F12*/ SDLK_7:
 			MainTable->port_draw();
 			break;
 		case 'i':
