@@ -339,7 +339,7 @@ void winmain::MainLoop()
 			if (!single_step && !no_time_loss)
 			{
 				auto dt = static_cast<float>(frameDuration.count());
-				printf("dtMilliSec: %f\n", dt);
+				// printf("dtMilliSec: %f\n", dt);
 				pb::frame(dt);
 				if (DispGRhistory)
 				{
